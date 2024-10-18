@@ -1,6 +1,8 @@
+set shell := ["bash", "-c"]
+
 init:
-    bash /opt/ros/jazzy/setup.bash
+    echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+    echo "source install/local_setup.bash" >> ~/.bashrc
 
 build:
     colcon build
-    bash install/local_setup.bash
