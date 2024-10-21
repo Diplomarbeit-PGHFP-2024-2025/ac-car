@@ -7,7 +7,7 @@ from aca_protocols.station_query_protocol import (
 
 from aca_protocols.acs_registry_id import acs_id
 
-from fetchAgent import agent
+from .fetchAgent import agent
 
 
 @agent.on_message(StationQueryResponse)

@@ -5,8 +5,8 @@ from std_msgs.msg import String
 
 from uagents import Context
 
-from fetchAgent import agent
-from communication import fetch_stations
+from .fetchAgent import agent
+from .communication import fetch_stations
 
 
 @agent.on_event("startup")
