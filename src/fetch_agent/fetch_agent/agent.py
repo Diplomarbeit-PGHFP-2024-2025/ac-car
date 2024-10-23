@@ -1,7 +1,6 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String
 
 from uagents import Context
 
@@ -16,9 +15,8 @@ async def introduce_agent(ctx: Context):
 
 
 class MinimalPublisher(Node):
-
     def __init__(self):
-        super().__init__('minimal_publisher')
+        super().__init__("minimal_publisher")
         agent.run()
 
 
@@ -33,5 +31,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
