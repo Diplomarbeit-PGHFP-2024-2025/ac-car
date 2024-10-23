@@ -9,6 +9,15 @@ init:
 install:
     python3 -m pip install uagents==0.17.0
     python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@bb4b4cd176b42fdec82ac08593957161af0c6e2f
+    python3 -m pip install ruff
+
+lint:
+    ruff check
+    ruff format --check
+
+fix:
+    ruff check --fix
+    ruff format
 
 build:
     colcon build
