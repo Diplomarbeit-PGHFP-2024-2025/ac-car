@@ -3,3 +3,4 @@
 /log
 .idea
 venv
+agent*_data.json
