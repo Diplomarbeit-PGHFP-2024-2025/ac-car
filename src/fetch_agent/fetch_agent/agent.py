@@ -1,17 +1,17 @@
 import rclpy
 from rclpy.node import Node
 
-
 from uagents import Context
 
 from .fetchAgent import agent
-from .communication import fetch_stations
+from .communication import fetch_stations, init
 
 
 @agent.on_event("startup")
 async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     await fetch_stations(ctx)
+    init(ctx)
 
 
 class MinimalPublisher(Node):

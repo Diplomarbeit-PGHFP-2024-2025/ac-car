@@ -23,8 +23,8 @@ def init(ctx: Context):
     if ctx.storage.get("car_properties") is None:
         ctx.storage.set("car_properties", PropertyQueryResponse(
             open_time_frames=[
-                (datetime.datetime.now() - datetime.timedelta(hours=2)).timestamp(),
-                (datetime.datetime.now() + datetime.timedelta(hours=2)).timestamp(),
+                (datetime.datetime.now() + datetime.timedelta(hours=1)).timestamp(),
+                (datetime.datetime.now() + datetime.timedelta(hours=4)).timestamp(),
             ],  # Default value: +- 4 hours from now is a possible Timeframe
             geo_point=(1, 1),
             cost_per_kwh=0.43,
@@ -65,14 +65,6 @@ async def fetch_stations(ctx: Context):
     )
 
 
-def filter_stations(ctx: Context, station_to_property_map: dict[str, PropertyQueryResponse]) -> bool:
-    car_properties: PropertyQueryResponse = ctx.storage.get("car_properties")
-    for e in station_to_property_map.values():
-
-        if car_properties.green_energy == True & e.green_energy != True:
-            return False
-
-
 async def build_station_map_and_send_property_requests(ctx: Context, stations: list[str]):
     ctx.logger.info("Starting building property map and requesting properties")
     station_to_property_map = {}
@@ -85,3 +77,41 @@ async def build_station_map_and_send_property_requests(ctx: Context, stations: l
         )
 
     ctx.storage.set("station_to_property_map", station_to_property_map)
+
+
+def filter_stations(ctx: Context, station_to_property_map: dict[str, PropertyQueryResponse]):
+    car_properties: PropertyQueryResponse = ctx.storage.get("car_properties")
+    station_to_property_map = sorted(station_to_property_map,
+                                     key=lambda item: sort_by_open_timeframe(car_properties.open_time_frames,
+                                                                             item.open_time_frames))
+
+    station_to_property_map = sorted(station_to_property_map,
+                                     key=lambda item: sort_by_distance(car_properties.geo_point,
+                                                                       item.geo_point))
+
+
+def sort_by_open_timeframe(car_timeframe: list[(int, int)], station_timeframe: list[(int, int)]) -> int:
+    # todo
+    pass
+
+
+def sort_by_distance(car_geo_point, station_geo_point) -> int:
+    # todo when pathfinding is implemented
+    pass
+
+
+def sort_by_cost(car_cost: float, station_cost: float) -> float:
+    return abs(car_cost - station_cost)
+
+
+def sort_by_charging_wattage(car_cw: int, station_cw: int) -> int:
+    return abs(car_cw - station_cw)
+
+
+def sort_by_green_energy(car_ge: bool, station_ge: bool) -> int:
+    if car_ge == True and station_ge == True:
+        return 1
+    elif car_ge == True and station_ge == False:
+        return -1
+    else:
+        return 0
