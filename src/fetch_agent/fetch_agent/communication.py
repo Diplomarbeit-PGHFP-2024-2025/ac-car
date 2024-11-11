@@ -5,10 +5,7 @@ from aca_protocols.station_query_protocol import (
     StationQueryResponse,
 )
 
-from aca_protocols.car_register_protocol import (
-    CarRegisterRequest,
-    CarRegisterResponse
-)
+from aca_protocols.car_register_protocol import CarRegisterRequest, CarRegisterResponse
 
 from aca_protocols.acs_registry_id import acs_id
 
