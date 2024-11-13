@@ -25,9 +25,11 @@ async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse)
         await ctx.send(station, PropertyQueryRequest())
         await register_at_station(ctx, station)
 
+
 @agent.on_message(PropertyQueryResponse)
 async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
     ctx.logger.info(f"properties of ${sender}: ${msg}")
+
 
 async def fetch_stations(ctx: Context):
     await ctx.send(
