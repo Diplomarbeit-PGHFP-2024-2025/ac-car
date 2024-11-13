@@ -1,0 +1,8 @@
+[package]
+name = "rust_pub"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+r2r = "0.9.3"
+tokio = { version = "1.41.1", features = ["full"] }
