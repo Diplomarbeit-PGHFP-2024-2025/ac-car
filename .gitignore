@@ -4,3 +4,5 @@
 .idea
 venv
 agent*_data.json
+
+**/target

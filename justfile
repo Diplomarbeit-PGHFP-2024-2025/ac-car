@@ -1,4 +1,6 @@
 set shell := ["bash", "-c"]
+mod rust
+mod agent
 
 init:
     python3 -m venv ./venv --system-site-packages --symlinks
@@ -11,16 +13,15 @@ install:
     python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@ffbf199cde07a21d41ff08e14450fae9594082cd
     python3 -m pip install ruff
 
+build:
+    just agent build
+
+    colcon build --packages-select py_pubsub
+
 lint:
-    ruff check
-    ruff format --check
+    just rust lint
+    just agent lint
 
 fix:
-    ruff check --fix
-    ruff format
-
-build:
-    colcon build
-
-run-agent:
-    ros2 run fetch_agent agent
+    just rust fix
+    just agent fix
