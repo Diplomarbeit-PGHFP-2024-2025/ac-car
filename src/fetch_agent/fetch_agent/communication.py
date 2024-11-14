@@ -7,6 +7,11 @@ from aca_protocols.station_query_protocol import (
 
 from aca_protocols.car_register_protocol import CarRegisterRequest, CarRegisterResponse
 
+from aca_protocols.property_query_protocol import (
+    PropertyQueryRequest,
+    PropertyQueryResponse,
+)
+
 from aca_protocols.acs_registry_id import acs_id
 
 from .fetchAgent import agent
@@ -17,7 +22,13 @@ async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse)
     ctx.logger.info(f"stations: ${msg}")
 
     for station in msg.stations:
+        await ctx.send(station, PropertyQueryRequest())
         await register_at_station(ctx, station)
+
+
+@agent.on_message(PropertyQueryResponse)
+async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
+    ctx.logger.info(f"properties of ${sender}: ${msg}")
 
 
 async def fetch_stations(ctx: Context):
