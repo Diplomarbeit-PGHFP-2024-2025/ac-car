@@ -7,8 +7,6 @@ init:
     echo "source ./install/local_setup.bash" >> ~/.bashrc
 
 install:
-    rm -rd venv/lib/python3.12/site-packages/aca_protocols
-    rm -rd venv/lib/python3.12/site-packages/aca_protocols-0.1.0.dist-info
     python3 -m pip install uagents==0.17.1
     python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@fee3b4b4b58d92c4b904496896b7d54a15d5f092
     python3 -m pip install ruff
