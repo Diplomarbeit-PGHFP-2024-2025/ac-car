@@ -13,80 +13,47 @@ from aca_protocols.car_register_protocol import CarRegisterRequest, CarRegisterR
 from aca_protocols.property_query_protocol import (
     PropertyQueryRequest,
     PropertyQueryResponse,
+    PropertyData
 )
 
 from aca_protocols.acs_registry_id import acs_id
 
 from .fetchAgent import agent
 
+from .filter_stations import *
+
 
 def init(ctx: Context):
-    if ctx.storage.get("car_properties") is None:
-        ctx.storage.set(
-            "car_properties",
-            PropertyQueryResponse(
-                open_time_frames=[
-                    (
-                        (
-                            datetime.datetime.now() + datetime.timedelta(hours=1)
-                        ).timestamp(),
-                        (
-                            datetime.datetime.now() + datetime.timedelta(hours=4)
-                        ).timestamp(),
-                    ),
-                ],  # Default value: +1 and +4 hours from now is a possible Timeframe
-                geo_point=(1, 1),
-                cost_per_kwh=0.43,
-                charging_wattage=11,
-                green_energy=True,
-            ),
-        )
-    if ctx.storage.get("station_to_property_map") is None:
-        ctx.storage.set("station_to_property_map", {})
+    initialize_car_properties(ctx)
 
 
 @agent.on_message(StationQueryResponse)
-async def on_station_query_response(
-    ctx: Context, sender: str, msg: StationQueryResponse
-):
-    ctx.logger.info(f"ACS-Registry ({sender}): stations: ${msg}")
+async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse):
+    ctx.logger.info(f"stations: ${msg}")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        build_station_map_and_send_property_requests(ctx, msg.stations)
-    )
-    loop.close()
-
-
-@agent.on_message(PropertyQueryResponse)
-async def on_property_query_response(
-    ctx: Context, sender: str, msg: PropertyQueryResponse
-):
-    ctx.logger.info(f"AC-Station ({sender}): properties: ${msg}")
-    station_to_property_map = ctx.storage.get("station_to_property_map")
-    station_to_property_map[sender] = msg
-
-    ctx.storage.set("station_to_property_map", station_to_property_map)
-
-    if not all(station_to_property_map.values()):
-        ctx.logger.info("Accessing function for filtering stations")
-        pass
+    initialize_stations_properties_map(ctx, msg.stations)
 
     for station in msg.stations:
+        ctx.logger.info(f"Requesting Properties of station: ${station}")
         await ctx.send(station, PropertyQueryRequest())
-        await register_at_station(ctx, station)
 
 
 @agent.on_message(PropertyQueryResponse)
 async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
     ctx.logger.info(f"properties of ${sender}: ${msg}")
 
+    set_PropertyData_of_sender(ctx, sender, msg.properties)
+
+    if is_finished_collecting_properties(ctx):
+        filter_stations(ctx)
+
 
 async def fetch_stations(ctx: Context):
-    ctx.logger.info("Fetching stations")
+    car_geo_point = ctx.storage.get("geo_point")
+
     await ctx.send(
         acs_id,
-        StationQueryRequest(lat=1.0, long=1.0, radius=5.0),
+        StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=5.0),
     )
 
 
@@ -100,73 +67,3 @@ async def register_at_station(ctx: Context, station: str):
         station,
         CarRegisterRequest(start_time=0, duration=10),
     )
-
-
-async def build_station_map_and_send_property_requests(
-    ctx: Context, stations: list[str]
-):
-    ctx.logger.info("Starting building property map and requesting properties")
-    station_to_property_map = {}
-    for station in stations:
-        station_to_property_map[station] = None
-
-        await ctx.send(station, PropertyQueryRequest())
-
-    ctx.storage.set("station_to_property_map", station_to_property_map)
-
-
-def filter_stations(
-    ctx: Context, station_to_property_map: dict[str, PropertyQueryResponse]
-) -> dict[str, PropertyQueryResponse]:
-    car_properties: PropertyQueryResponse = ctx.storage.get("car_properties")
-    sorted(
-        station_to_property_map,
-        key=lambda item: sort_by_all(car_properties, item[1]),
-    )
-
-
-def sort_by_all(
-    car_properties: PropertyQueryResponse, station_properties: PropertyQueryResponse
-) -> float:
-    return (
-        sort_by_open_timeframe(
-            car_properties.open_time_frames, station_properties.open_time_frames
-        )
-        + sort_by_distance(car_properties.geo_point, station_properties.geo_point)
-        + sort_by_cost(car_properties.cost_per_kwh, station_properties.cost_per_kwh)
-        + sort_by_charging_wattage(
-            car_properties.charging_wattage, station_properties.charging_wattage
-        )
-        + sort_by_green_energy(
-            car_properties.green_energy, station_properties.green_energy
-        )
-    ) / 5
-
-
-def sort_by_open_timeframe(
-    car_timeframe: list[(int, int)], station_timeframe: list[(int, int)]
-) -> int:
-    # todo
-    pass
-
-
-def sort_by_distance(car_geo_point, station_geo_point) -> int:
-    # todo when pathfinding is implemented
-    pass
-
-
-def sort_by_cost(car_cost: float, station_cost: float) -> float:
-    return abs(car_cost - station_cost)
-
-
-def sort_by_charging_wattage(car_cw: int, station_cw: int) -> float:
-    return abs(car_cw - station_cw)
-
-
-def sort_by_green_energy(car_ge: bool, station_ge: bool) -> int:
-    if car_ge is True and station_ge is True:
-        return 1
-    elif car_ge is True and station_ge is False:
-        return -1
-    else:
-        return 0
