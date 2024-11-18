@@ -1,4 +1,6 @@
 set shell := ["bash", "-c"]
+mod rust
+mod agent
 
 init:
     python3 -m venv ./venv --system-site-packages --symlinks
@@ -7,20 +9,19 @@ init:
     echo "source ./install/local_setup.bash" >> ~/.bashrc
 
 install:
-    python3 -m pip install uagents==0.17.0
-    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@afcd68a690d11433b519c6fe14a788ea470c686e
+    python3 -m pip install uagents==0.17.1
+    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@fee3b4b4b58d92c4b904496896b7d54a15d5f092
     python3 -m pip install ruff
 
+build:
+    just agent build
+
+    colcon build --packages-select py_pubsub
+
 lint:
-    ruff check
-    ruff format --check
+    just rust lint
+    just agent lint
 
 fix:
-    ruff check --fix
-    ruff format
-
-build:
-    colcon build
-
-run-agent:
-    ros2 run fetch_agent agent
+    just rust fix
+    just agent fix
