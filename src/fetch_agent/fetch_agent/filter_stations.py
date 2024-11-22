@@ -66,6 +66,7 @@ def set_PropertyData_of_sender(ctx: Context, sender: str, properties: str):
         if item[0] == sender:
             stations_properties.remove(item)
             stations_properties.append((item[0], properties))
+            break
 
     ctx.storage.set(json_key_stations_properties_map, stations_properties)
 
