@@ -10,8 +10,8 @@ from .communication import fetch_stations, init
 @agent.on_event("startup")
 async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
-    await fetch_stations(ctx)
     init(ctx)
+    await fetch_stations(ctx)
 
 
 class MinimalPublisher(Node):

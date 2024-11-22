@@ -1,6 +1,3 @@
-import asyncio
-import datetime
-
 from uagents import Context
 
 from aca_protocols.station_query_protocol import (
@@ -13,14 +10,18 @@ from aca_protocols.car_register_protocol import CarRegisterRequest, CarRegisterR
 from aca_protocols.property_query_protocol import (
     PropertyQueryRequest,
     PropertyQueryResponse,
-    PropertyData
 )
 
 from aca_protocols.acs_registry_id import acs_id
 
 from .fetchAgent import agent
-
-from .filter_stations import *
+from .filter_stations import (
+    initialize_stations_properties_map,
+    initialize_car_properties,
+    set_PropertyData_of_sender,
+    is_finished_collecting_properties,
+    filter_stations,
+)
 
 
 def init(ctx: Context):
