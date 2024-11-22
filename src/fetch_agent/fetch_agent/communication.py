@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from uagents import Context
 
 from aca_protocols.station_query_protocol import (
@@ -10,6 +12,7 @@ from aca_protocols.car_register_protocol import CarRegisterRequest, CarRegisterR
 from aca_protocols.property_query_protocol import (
     PropertyQueryRequest,
     PropertyQueryResponse,
+    PropertyData,
 )
 
 from aca_protocols.acs_registry_id import acs_id
@@ -46,7 +49,9 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
     set_PropertyData_of_sender(ctx, sender, msg.properties)
 
     if is_finished_collecting_properties(ctx):
-        filter_stations(ctx)
+        optimal_station: (str, PropertyData, Tuple[int, int]) = filter_stations(ctx)
+
+        await register_at_station(ctx, optimal_station[0])
 
 
 async def fetch_stations(ctx: Context):
