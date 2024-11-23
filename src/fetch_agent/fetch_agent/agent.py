@@ -3,14 +3,15 @@ from rclpy.node import Node
 
 from uagents import Context
 
+from .filter_stations import initialize_car_properties
 from .fetchAgent import agent
-from .communication import fetch_stations, init
+from .communication import fetch_stations
 
 
 @agent.on_event("startup")
 async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
-    init(ctx)
+    initialize_car_properties(ctx)
     await fetch_stations(ctx)
 
 

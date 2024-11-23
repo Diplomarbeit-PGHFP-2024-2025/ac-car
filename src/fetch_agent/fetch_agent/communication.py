@@ -1,3 +1,5 @@
+import asyncio
+import os
 from typing import Tuple
 
 from uagents import Context
@@ -20,38 +22,48 @@ from aca_protocols.acs_registry_id import acs_id
 from .fetchAgent import agent
 from .filter_stations import (
     initialize_stations_properties_map,
-    initialize_car_properties,
     set_PropertyData_of_sender,
-    is_finished_collecting_properties,
     filter_stations,
 )
 
+from dotenv import load_dotenv
 
-def init(ctx: Context):
-    initialize_car_properties(ctx)
+load_dotenv()
 
 
 @agent.on_message(StationQueryResponse)
 async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse):
-    ctx.logger.info(f"stations: ${msg}")
+    asyncio.ensure_future(on_station_query_response(ctx, msg))
 
-    initialize_stations_properties_map(ctx, msg.stations)
+
+async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
+    ctx.logger.info(f"stations: {msg}")
+    initialize_stations_properties_map(ctx)
 
     for station in msg.stations:
-        ctx.logger.info(f"Requesting Properties of station: ${station}")
+        ctx.logger.info(f"Requesting Properties of station: {station}")
         await ctx.send(station, PropertyQueryRequest())
+
+    await _wait_for_stations(ctx)
+
+    optimal_station: (str, PropertyData, Tuple[int, int]) = filter_stations(ctx)
+    if not optimal_station[0] == "NO STATION":
+        await register_at_station(ctx, optimal_station[0])
+
+
+async def _wait_for_stations(ctx):
+    waiting_time = int(os.getenv("WAITING_TIME"))
+    ctx.storage.set("finished_waiting", False)
+    ctx.logger.info(f"Waiting for responses from stations for: {waiting_time} seconds")
+    await asyncio.sleep(waiting_time)
+    ctx.storage.set("finished_waiting", True)
 
 
 @agent.on_message(PropertyQueryResponse)
 async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
-    ctx.logger.info(f"properties of ${sender}: ${msg}")
+    ctx.logger.info(f"properties of {sender}: {msg}")
 
     set_PropertyData_of_sender(ctx, sender, msg.properties)
-
-    if is_finished_collecting_properties(ctx):
-        optimal_station: (str, PropertyData, Tuple[int, int]) = filter_stations(ctx)
-
-        await register_at_station(ctx, optimal_station[0])
 
 
 async def fetch_stations(ctx: Context):
@@ -65,7 +77,7 @@ async def fetch_stations(ctx: Context):
 
 @agent.on_message(CarRegisterResponse)
 async def on_registered_at_station(ctx: Context, sender: str, msg: CarRegisterResponse):
-    ctx.logger.info(f"registered state: ${msg}")
+    ctx.logger.info(f"registered state: {msg}")
 
 
 async def register_at_station(ctx: Context, station: str):
