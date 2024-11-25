@@ -21,7 +21,9 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
 
 
 def _save_stations_properties_map(
-        ctx: Context, serialized: list[Tuple[str, PropertyData]], save_name: str = json_key_stations_properties_map
+    ctx: Context,
+    serialized: list[Tuple[str, PropertyData]],
+    save_name: str = json_key_stations_properties_map,
 ):
     ctx.logger.info(
         f"[Filter Stations, serialize_and_save_stations_properties_map]: Starting serializing and saving to {save_name}"
@@ -103,7 +105,7 @@ def filter_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
 
     sorted_stations: list[Tuple[str, PropertyData]] = sorted(
         stations_properties,
-        key=lambda to_sort: sort_by_all(car_properties, to_sort[1]),
+        key=lambda to_sort: _sort_by_all(car_properties, to_sort[1]),
     )
 
     _save_stations_properties_map(ctx, sorted_stations, "sorted_stations")
@@ -121,8 +123,8 @@ def filter_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     )
 
 
-def sort_by_all(
-        car_properties: PropertyData, station_properties: PropertyData
+def _sort_by_all(
+    car_properties: PropertyData, station_properties: PropertyData
 ) -> float:
     timeframe_sorting = _sort_by_timeframe(
         car_properties.open_time_frames, station_properties.open_time_frames
@@ -141,23 +143,23 @@ def sort_by_all(
     )
 
     return (
-            timeframe_sorting
-            + geo_point_sorting
-            + cost_per_kwh_sorting
-            + charging_wattage_sorting
-            + green_energy_sorting
+        timeframe_sorting
+        + geo_point_sorting
+        + cost_per_kwh_sorting
+        + charging_wattage_sorting
+        + green_energy_sorting
     ) / 5
 
 
 def _sort_by_timeframe(
-        car_expected_time_frames: list[Tuple[int, int]],
-        station_open_time_frames: list[Tuple[int, int]],
+    car_expected_time_frames: list[Tuple[int, int]],
+    station_open_time_frames: list[Tuple[int, int]],
 ) -> int:
     return abs(car_expected_time_frames[0][0] - station_open_time_frames[0][0])
 
 
 def _sort_by_geo_point(
-        car_geo_point: Tuple[float, float], station_geo_point: Tuple[float, float]
+    car_geo_point: Tuple[float, float], station_geo_point: Tuple[float, float]
 ) -> float:
     return abs(
         car_geo_point[0]
@@ -176,7 +178,7 @@ def _sort_by_charging_wattage(car_expected_wattage: int, station_wattage: int) -
 
 
 def _sort_by_green_energy(
-        car_expected_green_energy: bool, station_green_energy: bool
+    car_expected_green_energy: bool, station_green_energy: bool
 ) -> int:
     if station_green_energy:  # green energy is better in any case
         return 1
