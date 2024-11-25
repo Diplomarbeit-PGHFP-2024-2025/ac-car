@@ -21,17 +21,17 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
 
 
 def _save_stations_properties_map(
-    ctx: Context, serialized: list[Tuple[str, PropertyData]]
+        ctx: Context, serialized: list[Tuple[str, PropertyData]], save_name: str = json_key_stations_properties_map
 ):
     ctx.logger.info(
-        "[Filter Stations, serialize_and_save_stations_properties_map]: Starting serializing and saving"
+        f"[Filter Stations, serialize_and_save_stations_properties_map]: Starting serializing and saving to {save_name}"
     )
     to_save: list[Tuple[str, str]] = []
 
     for item in serialized:
         to_save.append((item[0], item[1].to_json()))
 
-    ctx.storage.set(json_key_stations_properties_map, to_save)
+    ctx.storage.set(save_name, to_save)
 
 
 def _read_car_properties(ctx: Context) -> PropertyData:
@@ -85,20 +85,6 @@ def initialize_car_properties(ctx: Context):
     ctx.storage.set("green_energy", True)
 
 
-def _save_sorted_stations(
-    ctx: Context, sorted_stations: list[Tuple[str, PropertyData]]
-):
-    ctx.logger.info(
-        f"[Filter Stations, save_sorted_stations]: Saving sorted stations: {sorted_stations}"
-    )
-    to_save: list[Tuple[str, PropertyData]] = []
-
-    for station in sorted_stations:
-        to_save.append((station[0], station[1].to_json()))
-
-    ctx.storage.set("sorted_stations", to_save)
-
-
 def filter_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
 
@@ -120,7 +106,7 @@ def filter_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         key=lambda to_sort: sort_by_all(car_properties, to_sort[1]),
     )
 
-    _save_sorted_stations(ctx, sorted_stations)
+    _save_stations_properties_map(ctx, sorted_stations, "sorted_stations")
 
     optimal_station: (str, PropertyData) = sorted_stations[0]
 
@@ -136,7 +122,7 @@ def filter_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
 
 
 def sort_by_all(
-    car_properties: PropertyData, station_properties: PropertyData
+        car_properties: PropertyData, station_properties: PropertyData
 ) -> float:
     timeframe_sorting = _sort_by_timeframe(
         car_properties.open_time_frames, station_properties.open_time_frames
@@ -155,23 +141,23 @@ def sort_by_all(
     )
 
     return (
-        timeframe_sorting
-        + geo_point_sorting
-        + cost_per_kwh_sorting
-        + charging_wattage_sorting
-        + green_energy_sorting
+            timeframe_sorting
+            + geo_point_sorting
+            + cost_per_kwh_sorting
+            + charging_wattage_sorting
+            + green_energy_sorting
     ) / 5
 
 
 def _sort_by_timeframe(
-    car_expected_time_frames: list[Tuple[int, int]],
-    station_open_time_frames: list[Tuple[int, int]],
+        car_expected_time_frames: list[Tuple[int, int]],
+        station_open_time_frames: list[Tuple[int, int]],
 ) -> int:
     return abs(car_expected_time_frames[0][0] - station_open_time_frames[0][0])
 
 
 def _sort_by_geo_point(
-    car_geo_point: Tuple[float, float], station_geo_point: Tuple[float, float]
+        car_geo_point: Tuple[float, float], station_geo_point: Tuple[float, float]
 ) -> float:
     return abs(
         car_geo_point[0]
@@ -190,7 +176,7 @@ def _sort_by_charging_wattage(car_expected_wattage: int, station_wattage: int) -
 
 
 def _sort_by_green_energy(
-    car_expected_green_energy: bool, station_green_energy: bool
+        car_expected_green_energy: bool, station_green_energy: bool
 ) -> int:
     if station_green_energy:  # green energy is better in any case
         return 1
