@@ -1,5 +1,8 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
+
+from custom_action_interfaces.action import Fibonacci
 
 from uagents import Context
 
@@ -18,7 +21,17 @@ async def introduce_agent(ctx: Context):
 class MinimalPublisher(Node):
     def __init__(self):
         super().__init__("minimal_publisher")
+        self._action_client = ActionClient(self, Fibonacci, 'fibonacci')
+        self.send_goal(5)
         agent.run()
+
+    def send_goal(self, order):
+        goal_msg = Fibonacci.Goal()
+        goal_msg.order = order
+
+        self._action_client.wait_for_server()
+
+        return self._action_client.send_goal_async(goal_msg)
 
 
 def main(args=None):
