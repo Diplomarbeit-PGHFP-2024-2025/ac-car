@@ -21,7 +21,7 @@ async def introduce_agent(ctx: Context):
 class MinimalPublisher(Node):
     def __init__(self):
         super().__init__("minimal_publisher")
-        self._action_client = ActionClient(self, Fibonacci, 'fibonacci')
+        self._action_client = ActionClient(self, Fibonacci, "fibonacci")
         self.send_goal(5)
         agent.run()
 

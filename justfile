@@ -19,9 +19,9 @@ build:
     colcon build
 
 lint:
-    just route lint
-    just agent lint
+    ruff check src/**/*.py
+    ruff format --check src/**/*.py
 
 fix:
-    just route fix
-    just agent fix
+    ruff check --fix src/**/*.py
+    ruff format src/**/*.py
