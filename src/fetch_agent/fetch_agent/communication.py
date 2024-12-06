@@ -20,10 +20,10 @@ from aca_protocols.property_query_protocol import (
 from aca_protocols.acs_registry_id import acs_id
 
 from .fetchAgent import agent
-from .filter_stations import (
+from .sort_stations import (
     initialize_stations_properties_map,
     set_PropertyData_of_sender,
-    filter_stations,
+    sort_stations,
 )
 
 from dotenv import load_dotenv
@@ -46,7 +46,7 @@ async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
 
     await _wait_for_stations(ctx)
 
-    optimal_station: (str, PropertyData, Tuple[int, int]) = filter_stations(ctx)
+    optimal_station: (str, PropertyData, Tuple[int, int]) = sort_stations(ctx)
     if not optimal_station[0] == "NO STATION":
         await register_at_station(ctx, optimal_station[0])
 
