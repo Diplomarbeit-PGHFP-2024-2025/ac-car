@@ -18,7 +18,6 @@ from aca_protocols.property_query_protocol import (
 )
 
 from aca_protocols.acs_registry_id import acs_id
-from uagents.setup import fund_agent_if_low
 
 from .fetchAgent import agent
 from .filter_stations import (
