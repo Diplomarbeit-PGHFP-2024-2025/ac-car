@@ -2,10 +2,15 @@ import rclpy
 from rclpy.node import Node
 
 from uagents import Context
+from uagents.setup import fund_agent_if_low
 
 from .filter_stations import initialize_car_properties
 from .fetchAgent import agent
 from .communication import fetch_stations
+
+from aca_protocols import MIN_TEST_AMOUNT
+
+fund_agent_if_low(agent.wallet.address(), min_balance=MIN_TEST_AMOUNT)
 
 
 @agent.on_event("startup")

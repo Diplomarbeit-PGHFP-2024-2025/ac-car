@@ -18,6 +18,7 @@ from aca_protocols.property_query_protocol import (
 )
 
 from aca_protocols.acs_registry_id import acs_id
+from uagents.setup import fund_agent_if_low
 
 from .fetchAgent import agent
 from .filter_stations import (
@@ -27,6 +28,7 @@ from .filter_stations import (
 )
 
 from dotenv import load_dotenv
+from aca_protocols.ac_payment_protocol import PaymentRequest, TransactionInfo
 
 load_dotenv()
 
@@ -85,3 +87,14 @@ async def register_at_station(ctx: Context, station: str):
         station,
         CarRegisterRequest(start_time=0, duration=10),
     )
+
+
+@agent.on_message(PaymentRequest)
+async def on_payment_reqeusted(ctx: Context, sender: str, msg: PaymentRequest):
+    ctx.logger.info(f"[Payment, on_payment_request]: sender: {sender}, msg: {msg}")
+
+    transaction = ctx.ledger.send_tokens(
+        msg.wallet_address, msg.amount, msg.denomination, agent.wallet
+    )
+
+    await ctx.send(sender, TransactionInfo(transaction_hash=transaction.tx_hash))
