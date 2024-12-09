@@ -1,5 +1,6 @@
-import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
+from collections import defaultdict
 
 from aca_protocols import PropertyData
 from uagents import Context
@@ -17,6 +18,14 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
 
     for item in serialized_properties:
         unserialized_properties.append((item[0], PropertyData.from_json(item[1])))
+
+    #delete not valid stations
+
+    filtered_properties = []
+
+    #for unserialized_property in unserialized_properties:
+    #    if unserialized_property[1].
+
 
     return unserialized_properties
 
@@ -71,6 +80,8 @@ def set_PropertyData_of_sender(ctx: Context, sender: str, properties: str):
 
 
 def initialize_car_properties(ctx: Context):
+    ctx.storage.set("car_geo_point", (20.32, 85.52))
+
     if not ctx.storage.get("green_energy_weight"):
         ctx.storage.set("green_energy_weight", 1)
 
@@ -80,9 +91,28 @@ def initialize_car_properties(ctx: Context):
     if not ctx.storage.get("charging_wattage_weight"):
         ctx.storage.set("charging_wattage_weight", 1)
 
+    if not ctx.storage.get("filter_max_km"):
+        ctx.storage.set("filter_max_km", 20)
+
+    if not ctx.storage.get("open_time_frames"):
+        ctx.storage.set(
+            "open_time_frames",
+            [
+                (
+                    (datetime.now() + timedelta(hours=1)).timestamp(),
+                    (datetime.now() + timedelta(hours=4)).timestamp(),
+                ),
+            ],
+        )
 
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
+
+    prop1 = ("station1", PropertyData(charging_wattage=11, green_energy=True, cost_per_kwh=0.5))
+    prop2 = ("station2", PropertyData(charging_wattage=22, green_energy=True, cost_per_kwh=0.62))
+    prop3 = ("station3", PropertyData(charging_wattage=3, green_energy=False, cost_per_kwh=0.62))
+
+    stations_properties = [prop1, prop2, prop3]
 
     if not stations_properties:  # case no station responded
         ctx.logger.warning(
@@ -97,7 +127,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
 
     car_properties = _read_car_properties(ctx)
 
-    #cost_per_kwh
+    # cost_per_kwh
     stations_price_sorted = sorted(
         stations_properties,
         key=lambda to_sort: to_sort[1].cost_per_kwh
@@ -111,7 +141,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         for i, station in enumerate(stations_price_sorted)
     ]
 
-    #charging_wattage
+    # charging_wattage
     stations_charging_wattage_sorted = sorted(
         stations_properties,
         key=lambda to_sort: to_sort[1].charging_wattage
@@ -125,7 +155,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         for i, station in enumerate(stations_charging_wattage_sorted)
     ]
 
-    #green_energy
+    # green_energy
     stations_green_energy_sorted = sorted(
         stations_properties,
         key=lambda to_sort: to_sort[1].charging_wattage
@@ -138,3 +168,23 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         if stations_green_energy_len > 1 else (station, 5)
         for i, station in enumerate(stations_green_energy_sorted)
     ]
+
+    station_weights = defaultdict(float)
+
+    for station, weight in price_weighted_result:
+        station_weights[station] += weight
+
+    for station, weight in charging_wattage_weighted_result:
+        station_weights[station] += weight
+
+    for station, weight in green_energy_weighted_result:
+        station_weights[station] += weight
+
+    sorted_station_weights = sorted(
+        station_weights.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    for station, total_weight in sorted_station_weights:
+        print(f"Station: {station}, Gesamtgewicht: {total_weight}")
