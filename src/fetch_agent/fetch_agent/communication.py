@@ -90,6 +90,7 @@ async def register_at_station(ctx: Context, station: str):
         CarRegisterRequest(start_time=0, duration=10),
     )
 
+
 @agent.on_message(PaymentRequest)
 async def on_payment_requested(ctx: Context, sender: str, msg: PaymentRequest):
     ctx.logger.info(f"[Payment, on_payment_request]: sender: {sender}, msg: {msg}")
