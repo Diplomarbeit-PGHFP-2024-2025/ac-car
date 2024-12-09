@@ -13,8 +13,10 @@ class Obstacle:
         self.height = height
 
     def __repr__(self):
-        return (f"Obstacle(rotation={self.rotation}, x={self.x}, "
-                f"y={self.y}, width={self.width}, height={self.height})")
+        return (
+            f"Obstacle(rotation={self.rotation}, x={self.x}, "
+            f"y={self.y}, width={self.width}, height={self.height})"
+        )
 
 
 class Station:
@@ -32,10 +34,10 @@ class Map:
     stations: list[Station]
 
     def read_file(self):
-        package_path = get_package_share_directory('route_manager')
-        json_file_path = os.path.join(package_path, 'map.json')
+        package_path = get_package_share_directory("route_manager")
+        json_file_path = os.path.join(package_path, "map.json")
 
-        with open(json_file_path, 'r') as file:
+        with open(json_file_path, "r") as file:
             data = json.load(file)
 
         self.obstacles = []
@@ -43,11 +45,26 @@ class Map:
 
         for obstacle in data["obstacles"]:
             self.obstacles.append(
-                Obstacle(obstacle["rotation"], obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"]))
+                Obstacle(
+                    obstacle["rotation"],
+                    obstacle["x"],
+                    obstacle["y"],
+                    obstacle["width"],
+                    obstacle["height"],
+                )
+            )
 
         for station in data["stations"]:
-            obstacle = Obstacle(station["rotation"], station["x"], station["y"], station["width"], station["height"])
-            self.stations.append(Station(obstacle, station["opening"]["x"], station["opening"]["y"]))
+            obstacle = Obstacle(
+                station["rotation"],
+                station["x"],
+                station["y"],
+                station["width"],
+                station["height"],
+            )
+            self.stations.append(
+                Station(obstacle, station["opening"]["x"], station["opening"]["y"])
+            )
 
     def get_obstacles(self) -> list[Obstacle]:
         data = []
