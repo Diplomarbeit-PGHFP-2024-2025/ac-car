@@ -4,6 +4,8 @@ from rclpy.node import Node
 
 from custom_action_interfaces.action import Fibonacci
 
+from .map import Map
+
 
 class FibonacciActionServer(Node):
     def __init__(self):
@@ -19,6 +21,11 @@ class FibonacciActionServer(Node):
 
 
 def main(args=None):
+    ac_map = Map()
+    ac_map.read_file()
+    print("obstacles", ac_map.get_obstacles())
+    print("station", ac_map.get_stations())
+
     rclpy.init(args=args)
 
     fibonacci_action_server = FibonacciActionServer()

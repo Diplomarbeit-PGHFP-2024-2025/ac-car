@@ -19,9 +19,9 @@ build:
     colcon build
 
 lint:
-    ruff check src/**/*.py
-    ruff format --check src/**/*.py
+    ruff check
+    ruff format --check
 
 fix:
-    ruff check --fix src/**/*.py
-    ruff format src/**/*.py
+    ruff check --fix
+    ruff format
