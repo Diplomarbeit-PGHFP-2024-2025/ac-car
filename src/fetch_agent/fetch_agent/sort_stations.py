@@ -19,14 +19,6 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
     for item in serialized_properties:
         unserialized_properties.append((item[0], PropertyData.from_json(item[1])))
 
-    #delete not valid stations
-
-    filtered_properties = []
-
-    #for unserialized_property in unserialized_properties:
-    #    if unserialized_property[1].
-
-
     return unserialized_properties
 
 
