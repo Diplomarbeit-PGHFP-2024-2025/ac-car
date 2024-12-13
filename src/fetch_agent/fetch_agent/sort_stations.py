@@ -3,6 +3,7 @@ from typing import Tuple
 from collections import defaultdict
 
 from aca_protocols import PropertyData
+from aca_protocols.property_query_protocol import PropertyCarData
 from uagents import Context
 
 json_key_stations_properties_map: str = "stations_properties_map"
@@ -38,13 +39,15 @@ def _save_stations_properties_map(
     ctx.storage.set(save_name, to_save)
 
 
-def _read_car_properties(ctx: Context) -> PropertyData:
+def _read_car_properties(ctx: Context) -> PropertyCarData:
     ctx.logger.info("[Sort Stations, read_car_properties]: Starting reading")
 
-    return PropertyData(
+    return PropertyCarData(
         green_energy=ctx.storage.get("green_energy_weight"),
         cost_per_kwh=ctx.storage.get("cost_pet_kwh_weight"),
         charging_wattage=ctx.storage.get("charging_wattage_weight"),
+        max_km=ctx.storage.get("filter_max_km"),
+        time_frames=ctx.storage.get("open_time_frames")
     )
 
 
@@ -62,6 +65,7 @@ def set_PropertyData_of_sender(ctx: Context, sender: str, properties: str):
     ctx.logger.info(
         f"[Sort Stations, set_PropertyData_of_sender]: Setting properties of {sender} to {properties}"
     )
+
     stations_properties: list[Tuple[str, str]] = ctx.storage.get(
         json_key_stations_properties_map
     )
@@ -91,18 +95,32 @@ def initialize_car_properties(ctx: Context):
             "open_time_frames",
             [
                 (
-                    (datetime.now() + timedelta(hours=1)).timestamp(),
-                    (datetime.now() + timedelta(hours=4)).timestamp(),
+                    int((datetime.now() + timedelta(hours=1)).timestamp()),
+                    int((datetime.now() + timedelta(hours=4)).timestamp()),
                 ),
             ],
         )
 
+
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
 
-    prop1 = ("station1", PropertyData(charging_wattage=11, green_energy=True, cost_per_kwh=0.5))
-    prop2 = ("station2", PropertyData(charging_wattage=22, green_energy=True, cost_per_kwh=0.62))
-    prop3 = ("station3", PropertyData(charging_wattage=3, green_energy=False, cost_per_kwh=0.62))
+    open_timeframes = [
+        (
+            int((datetime.now() + timedelta(hours=1)).timestamp()),
+            int((datetime.now() + timedelta(hours=4)).timestamp()),
+        ),
+    ]
+
+    prop1 = ("station1",
+             PropertyData(charging_wattage=11, green_energy=True, cost_per_kwh=0.5, open_time_frames=open_timeframes,
+                          geo_point=(20.32, 85.52)))
+    prop2 = ("station2",
+             PropertyData(charging_wattage=22, green_energy=True, cost_per_kwh=0.62, open_time_frames=open_timeframes,
+                          geo_point=(20.32, 85.52)))
+    prop3 = ("station3",
+             PropertyData(charging_wattage=3, green_energy=False, cost_per_kwh=0.62, open_time_frames=open_timeframes,
+                          geo_point=(20.32, 85.52)))
 
     stations_properties = [prop1, prop2, prop3]
 
@@ -178,5 +196,11 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         reverse=True
     )
 
+    #loop through all station to check if something works
     for station, total_weight in sorted_station_weights:
         print(f"Station: {station}, Gesamtgewicht: {total_weight}")
+
+    optimal_station: tuple[tuple[str, PropertyData], float] = sorted_station_weights[0]
+
+    # the first time frame
+    return optimal_station[0][0], optimal_station[0][1], optimal_station[0][1].open_time_frames[0]
