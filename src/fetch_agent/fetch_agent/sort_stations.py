@@ -1,12 +1,25 @@
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Tuple, List
 from collections import defaultdict
 
 from aca_protocols import PropertyData
-from aca_protocols.property_query_protocol import PropertyCarData
 from uagents import Context
 
 json_key_stations_properties_map: str = "stations_properties_map"
+
+
+class PropertyCarData:
+    def __init__(self,
+                 green_energy: bool,
+                 cost_per_kwh: float,
+                 charging_wattage: int,
+                 max_km: int,
+                 time_frames: List[Tuple[int, int]]):
+        self.green_energy = green_energy
+        self.cost_per_kwh = cost_per_kwh
+        self.charging_wattage = charging_wattage
+        self.max_km = max_km
+        self.time_frames = time_frames
 
 
 def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]]:
@@ -41,8 +54,6 @@ def _save_stations_properties_map(
 
 def _read_car_properties(ctx: Context) -> PropertyCarData:
     ctx.logger.info("[Sort Stations, read_car_properties]: Starting reading")
-
-    print(type(ctx.storage.get("cost_per_kwh_weight")))
 
     return PropertyCarData(
         green_energy=ctx.storage.get("green_energy_weight"),
@@ -107,7 +118,7 @@ def initialize_car_properties(ctx: Context):
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
 
-    #test stuff
+    # test stuff
     open_timeframes = [
         (
             int((datetime.now() + timedelta(hours=1)).timestamp()),
@@ -126,7 +137,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
                           geo_point=(20.32, 85.52)))
 
     stations_properties = [prop1, prop2, prop3]
-    #test stuff
+    # test stuff
 
     if not stations_properties:  # case no station responded
         ctx.logger.warning(
