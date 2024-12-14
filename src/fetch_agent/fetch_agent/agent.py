@@ -12,7 +12,7 @@ from .communication import fetch_stations
 async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     initialize_car_properties(ctx)
-    # await fetch_stations(ctx)
+    await fetch_stations(ctx)
 
 
 class MinimalPublisher(Node):

@@ -42,9 +42,11 @@ def _save_stations_properties_map(
 def _read_car_properties(ctx: Context) -> PropertyCarData:
     ctx.logger.info("[Sort Stations, read_car_properties]: Starting reading")
 
+    print(type(ctx.storage.get("cost_per_kwh_weight")))
+
     return PropertyCarData(
         green_energy=ctx.storage.get("green_energy_weight"),
-        cost_per_kwh=ctx.storage.get("cost_pet_kwh_weight"),
+        cost_per_kwh=ctx.storage.get("cost_per_kwh_weight"),
         charging_wattage=ctx.storage.get("charging_wattage_weight"),
         max_km=ctx.storage.get("filter_max_km"),
         time_frames=ctx.storage.get("open_time_frames")
@@ -105,6 +107,7 @@ def initialize_car_properties(ctx: Context):
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
 
+    #test stuff
     open_timeframes = [
         (
             int((datetime.now() + timedelta(hours=1)).timestamp()),
@@ -123,6 +126,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
                           geo_point=(20.32, 85.52)))
 
     stations_properties = [prop1, prop2, prop3]
+    #test stuff
 
     if not stations_properties:  # case no station responded
         ctx.logger.warning(
@@ -146,7 +150,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_price_len = len(stations_price_sorted)
 
     price_weighted_result = [
-        (station, 5 - 4 * i / (stations_price_len - 1) * car_properties.cost_per_kwh)
+        (station, (5 - 4 * i / (stations_price_len - 1)) * car_properties.cost_per_kwh)
         if stations_price_len > 1 else (station, 5)
         for i, station in enumerate(stations_price_sorted)
     ]
@@ -160,7 +164,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_charging_wattage_len = len(stations_charging_wattage_sorted)
 
     charging_wattage_weighted_result = [
-        (station, 5 - 4 * i / (stations_charging_wattage_len - 1) * car_properties.charging_wattage)
+        (station, (5 - 4 * i / (stations_charging_wattage_len - 1)) * car_properties.charging_wattage)
         if stations_charging_wattage_len > 1 else (station, 5)
         for i, station in enumerate(stations_charging_wattage_sorted)
     ]
@@ -174,7 +178,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_green_energy_len = len(stations_green_energy_sorted)
 
     green_energy_weighted_result = [
-        (station, 5 - 4 * i / (stations_green_energy_len - 1) * car_properties.green_energy)
+        (station, (5 - 4 * i / (stations_green_energy_len - 1)) * car_properties.green_energy)
         if stations_green_energy_len > 1 else (station, 5)
         for i, station in enumerate(stations_green_energy_sorted)
     ]
@@ -196,11 +200,6 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
         reverse=True
     )
 
-    #loop through all station to check if something works
-    for station, total_weight in sorted_station_weights:
-        print(f"Station: {station}, Gesamtgewicht: {total_weight}")
-
     optimal_station: tuple[tuple[str, PropertyData], float] = sorted_station_weights[0]
 
-    # the first time frame
     return optimal_station[0][0], optimal_station[0][1], optimal_station[0][1].open_time_frames[0]
