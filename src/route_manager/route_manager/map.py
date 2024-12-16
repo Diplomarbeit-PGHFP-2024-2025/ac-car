@@ -2,6 +2,7 @@ import json
 import math
 import os
 from enum import Enum
+from typing import Tuple, List
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -113,6 +114,28 @@ class CellState(Enum):
     OBSTACLE = 3
 
 
+class Node:
+    def __init__(self, direction: Tuple[int, int] = None, parent: 'Node' = None, position: Tuple[int, int] = None):
+        self.parent = parent
+        self.position = position
+        self.direction = direction
+
+        self.g = 0
+        self.h = 0
+        self.f = 0
+
+    def __eq__(self, other):
+        return self.position == other.position
+
+    def get_possible_next_tiles(self):
+        possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
+                    (0, 1)]
+
+        index = possible.index(self.direction)
+
+        return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
+
+
 class Map:
     _cells: list[list[CellState]]
 
@@ -152,7 +175,92 @@ class Map:
                 if has_neighbor:
                     self._cells[x][y] = CellState.PADDING
 
-    def __repr__(self):
+    def get_path(self, direction: Tuple[int, int], start: Tuple[int, int], end: Tuple[int, int]) -> List[Tuple[
+        int, int]] | None:
+        # Create start and end node
+        start_node = Node(direction, None, start)
+        start_node.g = start_node.h = start_node.f = 0
+        end_node = Node(None, None, end)
+        end_node.g = end_node.h = end_node.f = 0
+
+        # Initialize both open and closed list
+        open_list = []
+        closed_list = []
+
+        # Add the start node
+        open_list.append(start_node)
+
+        # Loop until you find the end
+        while len(open_list) > 0:
+
+            # Get the current node
+            current_node = open_list[0]
+            current_index = 0
+            for index, item in enumerate(open_list):
+                if item.f < current_node.f:
+                    current_node = item
+                    current_index = index
+
+            # Pop current off open list, add to closed list
+            open_list.pop(current_index)
+            closed_list.append(current_node)
+
+            # Found the goal
+            if current_node == end_node:
+                path = []
+                current = current_node
+                while current is not None:
+                    path.append(current.position)
+                    current = current.parent
+                return path[::-1]  # Return reversed path
+
+            # Generate children
+            children = []
+            for new_position in current_node.get_possible_next_tiles():  # Adjacent squares
+
+                # Get node position
+                node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+
+                # Make sure within range
+                if node_position[0] > (len(self._cells) - 1) or node_position[0] < 0 or node_position[1] > (
+                        len(self._cells[len(self._cells) - 1]) - 1) or node_position[1] < 0:
+                    continue
+
+                # Make sure walkable terrain
+                if self._cells[node_position[0]][node_position[1]] != CellState.EMPTY:
+                    continue
+
+                # Create new node
+                new_node = Node(
+                    (node_position[0] - current_node.position[0], node_position[1] - current_node.position[1]),
+                    current_node, node_position)
+
+                # Append
+                children.append(new_node)
+
+            # Loop through children
+            for child in children:
+
+                # Child is on the closed list
+                for closed_child in closed_list:
+                    if child == closed_child:
+                        continue
+
+                # Create the f, g, and h values
+                child.g = current_node.g + 1
+                child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                        (child.position[1] - end_node.position[1]) ** 2)
+                child.f = child.g + child.h
+
+                # Child is already in the open list
+                for open_node in open_list:
+                    if child == open_node and child.g > open_node.g:
+                        continue
+
+                # Add the child to the open list
+                open_list.append(child)
+
+    def display_path(self, path: List[Tuple[int, int]]) -> str:
         result = ""
 
         width = len(self._cells)
@@ -160,11 +268,32 @@ class Map:
 
         for y in range(0, height):
             for x in range(0, width):
-                if self._cells[x][y] == CellState.OBSTACLE:
+                if path.__contains__((x, y)):
+                    result += " 0 "
+                elif self._cells[x][y] == CellState.OBSTACLE:
                     result += " # "
                 elif self._cells[x][y] == CellState.PADDING:
                     result += " + "
                 else:
                     result += " . "
             result += "\n"
+
         return result
+
+
+def __repr__(self):
+    result = ""
+
+    width = len(self._cells)
+    height = len(self._cells[0])
+
+    for y in range(0, height):
+        for x in range(0, width):
+            if self._cells[x][y] == CellState.OBSTACLE:
+                result += " # "
+            elif self._cells[x][y] == CellState.PADDING:
+                result += " + "
+            else:
+                result += " . "
+        result += "\n"
+    return result
