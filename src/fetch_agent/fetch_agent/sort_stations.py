@@ -33,7 +33,24 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
     for item in serialized_properties:
         unserialized_properties.append((item[0], PropertyData.from_json(item[1])))
 
-    return unserialized_properties
+    return filter_stations(ctx, unserialized_properties)
+
+
+def filter_stations(ctx: Context, stations: list[Tuple[str, PropertyData]]) -> list[Tuple[str, PropertyData]]:
+    car_properties: PropertyCarData = _read_car_properties(ctx)
+
+    filtered_stations = []
+
+    for station in stations:
+        if False:
+            # todo check if pathfinding distance to large
+            pass
+
+        if (car_properties.time_frames[0][0] <= station[1].open_time_frames[-1][-1]) and (
+                station[1].open_time_frames[0][0] <= car_properties.time_frames[0][-1]):
+            filtered_stations.append(station)
+
+    return filtered_stations
 
 
 def _save_stations_properties_map(
