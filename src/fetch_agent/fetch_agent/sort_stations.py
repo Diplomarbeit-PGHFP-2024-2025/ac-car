@@ -135,27 +135,6 @@ def initialize_car_properties(ctx: Context):
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     stations_properties = _read_stations_properties_map(ctx)
 
-    # test stuff
-    open_timeframes = [
-        (
-            int((datetime.now() + timedelta(hours=1)).timestamp()),
-            int((datetime.now() + timedelta(hours=4)).timestamp()),
-        ),
-    ]
-
-    prop1 = ("station1",
-             PropertyData(charging_wattage=11, green_energy=True, cost_per_kwh=0.5, open_time_frames=open_timeframes,
-                          geo_point=(20.32, 85.52)))
-    prop2 = ("station2",
-             PropertyData(charging_wattage=22, green_energy=True, cost_per_kwh=0.62, open_time_frames=open_timeframes,
-                          geo_point=(20.32, 85.52)))
-    prop3 = ("station3",
-             PropertyData(charging_wattage=3, green_energy=False, cost_per_kwh=0.62, open_time_frames=open_timeframes,
-                          geo_point=(20.32, 85.52)))
-
-    stations_properties = [prop1, prop2, prop3]
-    # test stuff
-
     if not stations_properties:  # case no station responded
         ctx.logger.warning(
             f"[Sort Stations, sort_stations]: No station responded. Here is nothing to filter: {stations_properties}. So there is no optimal station"
