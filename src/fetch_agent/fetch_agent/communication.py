@@ -27,6 +27,8 @@ from .sort_stations import (
 )
 
 from dotenv import load_dotenv
+from aca_protocols.ac_payment_protocol import PaymentRequest, TransactionInfo
+from aca_protocols.ac_charging_protocol import CarFinishedChargingInfo
 
 load_dotenv()
 
@@ -80,9 +82,22 @@ async def fetch_stations(ctx: Context):
 async def on_registered_at_station(ctx: Context, sender: str, msg: CarRegisterResponse):
     ctx.logger.info(f"registered state: {msg}")
 
+    await ctx.send(sender, CarFinishedChargingInfo(kwh_charged=12))
+
 
 async def register_at_station(ctx: Context, station: str):
     await ctx.send(
         station,
         CarRegisterRequest(start_time=0, duration=10),
     )
+
+
+@agent.on_message(PaymentRequest)
+async def on_payment_requested(ctx: Context, sender: str, msg: PaymentRequest):
+    ctx.logger.info(f"[Payment, on_payment_request]: sender: {sender}, msg: {msg}")
+
+    transaction = ctx.ledger.send_tokens(
+        msg.wallet_address, msg.amount, msg.denomination, agent.wallet
+    )
+
+    await ctx.send(sender, TransactionInfo(transaction_hash=transaction.tx_hash))

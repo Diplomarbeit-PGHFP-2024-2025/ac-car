@@ -1,6 +1,7 @@
 set shell := ["bash", "-c"]
-mod rust
+
 mod agent
+mod route
 
 init:
     python3 -m venv ./venv --system-site-packages --symlinks
@@ -15,14 +16,12 @@ install:
     python3 -m pip install python-dotenv
 
 build:
-    just agent build
-
-    colcon build --packages-select py_pubsub
+    colcon build
 
 lint:
-    just rust lint
-    just agent lint
+    ruff check
+    ruff format --check
 
 fix:
-    just rust fix
-    just agent fix
+    ruff check --fix
+    ruff format
