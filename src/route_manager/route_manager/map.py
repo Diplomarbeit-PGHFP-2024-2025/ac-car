@@ -143,9 +143,9 @@ class PathNode:
         elif self.direction == (-1, -1):
             return '↖'
         elif self.direction == (-1, 1):
-            return '↗'
-        elif self.direction == (1, -1):
             return '↙'
+        elif self.direction == (1, -1):
+            return '↗'
         elif self.direction == (1, 1):
             return '↘'
         else:
@@ -172,13 +172,14 @@ class Node:
     def __eq__(self, other):
         return self.position == other.position
 
-    def get_possible_next_tiles(self) -> List[Point]:
-        possible = [Point(1, 1), Point(1, 0), Point(1, -1), Point(0, -1), Point(-1, -1), Point(-1, 0), Point(-1, 1),
-                    Point(0, 1)]
 
-        index = possible.index(Point(self.direction[0], self.direction[1]))
+def get_possible_next_tiles(direction: Tuple[int, int]) -> List[Tuple[int, int]]:
+    possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
+                (0, 1)]
 
-        return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
+    index = possible.index((direction[0], direction[1]))
+
+    return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
 
 
 class Map:
@@ -261,11 +262,11 @@ class Map:
 
             # Generate children
             children = []
-            for new_position in current_node.get_possible_next_tiles():  # Adjacent squares
+            for offset in get_possible_next_tiles(current_node.direction):  # Adjacent squares
 
                 # Get node position
-                node_position = Point(current_node.position.x + new_position.x,
-                                      current_node.position.y + new_position.y)
+                node_position = Point(current_node.position.x + offset[0],
+                                      current_node.position.y + offset[1])
 
                 # Make sure within range
                 if node_position.x > (len(self._cells) - 1) or node_position.x < 0 or node_position.y > (
@@ -335,11 +336,19 @@ class Map:
             if len(nodes) <= index:
                 break
 
-            if self.is_free_line(nodes[index].position, nodes[index - 2].position):
-                nodes.pop(index - 1)
+            prev = nodes[index - 2]
+            next = nodes[index]
+
+            next_directions = get_possible_next_tiles(prev.direction)
+            if not next_directions.__contains__(next.direction):
+                index += 1
                 continue
 
-            index += 1
+            if not self.is_free_line(next.position, prev.position):
+                index += 1
+                continue
+
+            nodes.pop(index - 1)
 
         return nodes
 
