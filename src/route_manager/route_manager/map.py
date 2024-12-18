@@ -7,18 +7,29 @@ from typing import Tuple, List
 from ament_index_python.packages import get_package_share_directory
 
 
-class Obstacle:
-    def __init__(self, rotation: float, x: int, y: int, width: int, height: int):
-        self.rotation = rotation
+class Point:
+    def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
+
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+
+class Obstacle:
+    def __init__(self, rotation: float, center: Point, width: int, height: int):
+        self.rotation = rotation
+        self.center = center
         self.width = width
         self.height = height
 
-    def is_inside(self, px: int, py: int) -> bool:
+    def is_inside(self, point: Point) -> bool:
         # Translate the point to the rectangle's center
-        translated_x = px - self.x
-        translated_y = py - self.y
+        translated_x = point.x - self.center.x
+        translated_y = point.y - self.center.y
 
         # Rotate the point back by the negative rotation angle
         angle_rad = -self.rotation
@@ -36,19 +47,18 @@ class Obstacle:
 
     def __repr__(self):
         return (
-            f"Obstacle(rotation={self.rotation}, x={self.x}, "
-            f"y={self.y}, width={self.width}, height={self.height})"
+            f"Obstacle(rotation={self.rotation}, center={self.center}, "
+            f" width={self.width}, height={self.height})"
         )
 
 
 class Station:
-    def __init__(self, obstacle: Obstacle, opening_x: int, opening_y: int):
+    def __init__(self, obstacle: Obstacle, opening: Point):
         self.obstacle = obstacle
-        self.opening_x = opening_x
-        self.opening_y = opening_y
+        self.opening = opening
 
     def __repr__(self):
-        return f"Station(obstacle={self.obstacle}, opening_x={self.opening_x}, opening_y={self.opening_y})"
+        return f"Station(obstacle={self.obstacle}, opening={self.opening})"
 
 
 class MapData:
@@ -76,8 +86,9 @@ class MapData:
             self._obstacles.append(
                 Obstacle(
                     obstacle["rotation"],
-                    obstacle["x"],
-                    obstacle["y"],
+                    Point(obstacle["x"],
+                          obstacle["y"])
+                    ,
                     obstacle["width"],
                     obstacle["height"],
                 )
@@ -86,13 +97,14 @@ class MapData:
         for station in data["stations"]:
             obstacle = Obstacle(
                 station["rotation"],
-                station["x"],
-                station["y"],
+                Point(station["x"],
+                      station["y"])
+                ,
                 station["width"],
                 station["height"],
             )
             self._stations.append(
-                Station(obstacle, station["opening"]["x"], station["opening"]["y"])
+                Station(obstacle, Point(station["opening"]["x"], station["opening"]["y"]))
             )
 
     def get_obstacles(self) -> list[Obstacle]:
@@ -114,8 +126,41 @@ class CellState(Enum):
     OBSTACLE = 3
 
 
+class PathNode:
+    def __init__(self, direction: Tuple[int, int] = None, position: Point = None):
+        self.position = position
+        self.direction = direction
+
+    def __repr__(self):
+        if self.direction == (0, -1):
+            return '↑'
+        elif self.direction == (0, 1):
+            return '↓'
+        elif self.direction == (-1, 0):
+            return '←'
+        elif self.direction == (1, 0):
+            return '→'
+        elif self.direction == (-1, -1):
+            return '↖'
+        elif self.direction == (-1, 1):
+            return '↗'
+        elif self.direction == (1, -1):
+            return '↙'
+        elif self.direction == (1, 1):
+            return '↘'
+        else:
+            return '✦'  # Default symbol if no direction matches
+
+
+def find_path_node(nodes_list, pos: Point):
+    for node in nodes_list:
+        if node.position == pos:
+            return node
+    return None
+
+
 class Node:
-    def __init__(self, direction: Tuple[int, int] = None, parent: 'Node' = None, position: Tuple[int, int] = None):
+    def __init__(self, direction: Tuple[int, int] = None, parent: 'Node' = None, position: Point = None):
         self.parent = parent
         self.position = position
         self.direction = direction
@@ -127,11 +172,11 @@ class Node:
     def __eq__(self, other):
         return self.position == other.position
 
-    def get_possible_next_tiles(self):
-        possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
-                    (0, 1)]
+    def get_possible_next_tiles(self) -> List[Point]:
+        possible = [Point(1, 1), Point(1, 0), Point(1, -1), Point(0, -1), Point(-1, -1), Point(-1, 0), Point(-1, 1),
+                    Point(0, 1)]
 
-        index = possible.index(self.direction)
+        index = possible.index(Point(self.direction[0], self.direction[1]))
 
         return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
 
@@ -148,7 +193,7 @@ class Map:
         for obstacle in map_data.get_obstacles():
             for x in range(0, x_count):
                 for y in range(0, y_count):
-                    if obstacle.is_inside(x * map_data.cell_size, y * map_data.cell_size):
+                    if obstacle.is_inside(Point(x * map_data.cell_size, y * map_data.cell_size)):
                         self._cells[x][y] = CellState.OBSTACLE
 
         for x in range(0, x_count):
@@ -175,8 +220,8 @@ class Map:
                 if has_neighbor:
                     self._cells[x][y] = CellState.PADDING
 
-    def get_path(self, direction: Tuple[int, int], start: Tuple[int, int], end: Tuple[int, int]) -> List[Tuple[
-        int, int]] | None:
+    def get_path(self, direction: Tuple[int, int], start: Point, end: Point) -> List[
+                                                                                    PathNode] | None:
         # Create start and end node
         start_node = Node(direction, None, start)
         start_node.g = start_node.h = start_node.f = 0
@@ -210,7 +255,7 @@ class Map:
                 path = []
                 current = current_node
                 while current is not None:
-                    path.append(current.position)
+                    path.append(PathNode(current.direction, current.position))
                     current = current.parent
                 return path[::-1]  # Return reversed path
 
@@ -219,20 +264,21 @@ class Map:
             for new_position in current_node.get_possible_next_tiles():  # Adjacent squares
 
                 # Get node position
-                node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+                node_position = Point(current_node.position.x + new_position.x,
+                                      current_node.position.y + new_position.y)
 
                 # Make sure within range
-                if node_position[0] > (len(self._cells) - 1) or node_position[0] < 0 or node_position[1] > (
-                        len(self._cells[len(self._cells) - 1]) - 1) or node_position[1] < 0:
+                if node_position.x > (len(self._cells) - 1) or node_position.x < 0 or node_position.y > (
+                        len(self._cells[len(self._cells) - 1]) - 1) or node_position.y < 0:
                     continue
 
                 # Make sure walkable terrain
-                if self._cells[node_position[0]][node_position[1]] != CellState.EMPTY:
+                if self._cells[node_position.x][node_position.y] != CellState.EMPTY:
                     continue
 
                 # Create new node
                 new_node = Node(
-                    (node_position[0] - current_node.position[0], node_position[1] - current_node.position[1]),
+                    (node_position.x - current_node.position.x, node_position.y - current_node.position.y),
                     current_node, node_position)
 
                 # Append
@@ -248,8 +294,8 @@ class Map:
 
                 # Create the f, g, and h values
                 child.g = current_node.g + 1
-                child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
-                        (child.position[1] - end_node.position[1]) ** 2)
+                child.h = ((child.position.x - end_node.position.x) ** 2) + (
+                        (child.position.y - end_node.position.y) ** 2)
                 child.f = child.g + child.h
 
                 # Child is already in the open list
@@ -260,7 +306,7 @@ class Map:
                 # Add the child to the open list
                 open_list.append(child)
 
-    def display_path(self, path: List[Tuple[int, int]]) -> str:
+    def display_path(self, path: List[PathNode]) -> str:
         result = ""
 
         width = len(self._cells)
@@ -268,8 +314,10 @@ class Map:
 
         for y in range(0, height):
             for x in range(0, width):
-                if path.__contains__((x, y)):
-                    result += " 0 "
+                path_node = find_path_node(path, Point(x, y))
+
+                if path_node is not None:
+                    result += " " + path_node.__repr__() + " "
                 elif self._cells[x][y] == CellState.OBSTACLE:
                     result += " # "
                 elif self._cells[x][y] == CellState.PADDING:
@@ -280,20 +328,69 @@ class Map:
 
         return result
 
+    def simplify_path(self, nodes: List[PathNode]) -> List[PathNode]:
+        index = 2
 
-def __repr__(self):
-    result = ""
+        while True:
+            if len(nodes) <= index:
+                break
 
-    width = len(self._cells)
-    height = len(self._cells[0])
+            if self.is_free_line(nodes[index].position, nodes[index - 2].position):
+                nodes.pop(index - 1)
+                continue
 
-    for y in range(0, height):
-        for x in range(0, width):
-            if self._cells[x][y] == CellState.OBSTACLE:
-                result += " # "
-            elif self._cells[x][y] == CellState.PADDING:
-                result += " + "
-            else:
-                result += " . "
-        result += "\n"
-    return result
+            index += 1
+
+        return nodes
+
+    def is_free_line(self, a: Point, b: Point) -> bool:
+        line_points = get_straight_line(a, b)
+
+        for point in line_points:
+            if self._cells[point.x][point.y] != CellState.EMPTY:
+                return False
+
+        return True
+
+    def __repr__(self):
+        result = ""
+
+        width = len(self._cells)
+        height = len(self._cells[0])
+
+        for y in range(0, height):
+            for x in range(0, width):
+                if self._cells[x][y] == CellState.OBSTACLE:
+                    result += " # "
+                elif self._cells[x][y] == CellState.PADDING:
+                    result += " + "
+                else:
+                    result += " . "
+            result += "\n"
+        return result
+
+
+def get_straight_line(a: Point, b: Point) -> List[Point]:
+    # Calculate differences
+    dx = abs(b.x - a.x)
+    dy = abs(b.y - a.y)
+    sx = 1 if a.x < b.x else -1
+    sy = 1 if a.y < b.y else -1
+    err = dx - dy
+
+    points = []
+
+    while True:
+        points.append(a)  # Add current point to the list
+        if a == b:
+            break  # Break when the endpoint is reached
+
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            a = Point(a.x + sx, a.y)
+        if e2 < dx:
+            err += dx
+            a = Point(a.x, a.y + sy)
+
+    return points
