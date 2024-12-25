@@ -12,6 +12,15 @@ class Point:
         self.x = x
         self.y = y
 
+    def distance(self, other: 'Point'):
+        return math.sqrt(
+            (self.x - other.x) ** 2 +
+            (self.y - other.y) ** 2
+        )
+
+    def __floordiv__(self, other):
+        return Point(self.x // other, self.y // other)
+
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y})"
 
@@ -184,12 +193,16 @@ def get_possible_next_tiles(direction: Tuple[int, int]) -> List[Tuple[int, int]]
 
 class Map:
     _cells: list[list[CellState]]
+    _stations: List[Station]
+    _cell_size: int
 
     def __init__(self, map_data: MapData):
         x_count = int(map_data.width / map_data.cell_size)
         y_count = int(map_data.height / map_data.cell_size)
 
         self._cells = [[CellState.EMPTY for _ in range(x_count)] for _ in range(y_count)]
+        self._stations = map_data.get_stations()
+        self._cell_size = map_data.cell_size
 
         for obstacle in map_data.get_obstacles():
             for x in range(0, x_count):
@@ -221,12 +234,19 @@ class Map:
                 if has_neighbor:
                     self._cells[x][y] = CellState.PADDING
 
-    def get_path(self, direction: Tuple[int, int], start: Point, end: Point) -> List[
-                                                                                    PathNode] | None:
+        for station in self._stations:
+            center = station.obstacle.center // map_data.cell_size
+            opening = station.opening // map_data.cell_size
+
+            for point in get_straight_line(center, opening):
+                self._cells[point.x][point.y] = CellState.EMPTY
+
+    def get_path(self, direction: Tuple[int, int], start: Point, goal_station: int) -> List[
+                                                                                           PathNode] | None:
         # Create start and end node
         start_node = Node(direction, None, start)
         start_node.g = start_node.h = start_node.f = 0
-        end_node = Node(None, None, end)
+        end_node = Node(None, None, self._stations[goal_station].obstacle.center // self._cell_size)
         end_node.g = end_node.h = end_node.f = 0
 
         # Initialize both open and closed list
@@ -289,23 +309,26 @@ class Map:
             for child in children:
 
                 # Child is on the closed list
-                for closed_child in closed_list:
-                    if child == closed_child:
-                        continue
+                if child in closed_list:
+                    continue
 
                 # Create the f, g, and h values
-                child.g = current_node.g + 1
-                child.h = ((child.position.x - end_node.position.x) ** 2) + (
-                        (child.position.y - end_node.position.y) ** 2)
+                child.g = current_node.g + current_node.position.distance(child.position)
+                child.h = child.position.distance(end_node.position)
                 child.f = child.g + child.h
 
-                # Child is already in the open list
-                for open_node in open_list:
-                    if child == open_node and child.g > open_node.g:
-                        continue
+                # Check if this neighbor is in the open list
+                existing_node = next((node for node in open_list if node == child), None)
 
-                # Add the child to the open list
-                open_list.append(child)
+                if existing_node:
+                    # If the new path is better, update the existing node
+                    if child.g < existing_node.g:
+                        existing_node.g = child.g
+                        existing_node.f = child.f
+                        existing_node.parent = current_node
+                else:
+                    # Otherwise, add the neighbor to the open list
+                    open_list.append(child)
 
     def display_path(self, path: List[PathNode]) -> str:
         result = ""

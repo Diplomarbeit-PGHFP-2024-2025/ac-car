@@ -23,11 +23,11 @@
       "rotation": 0,
       "x": 10,
       "y": 10,
-      "width": 10,
-      "height": 10,
+      "width": 20,
+      "height": 20,
       "opening": {
-        "x": 20,
-        "y": 0
+        "x": 10,
+        "y": 30
       }
     }
   ]

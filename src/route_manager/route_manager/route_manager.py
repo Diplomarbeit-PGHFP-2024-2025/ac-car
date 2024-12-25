@@ -27,12 +27,13 @@ def main(args=None):
     print("station", ac_map_data.get_stations())
 
     ac_map = Map(ac_map_data)
-    path = ac_map.get_path((-1, 0), Point(5, 0), Point(18, 18))
-    path = ac_map.simplify_path(path)
+    path = ac_map.get_path((1, 0), Point(15, 15), 0)
 
     if path is not None:
+        path = ac_map.simplify_path(path)
         print(ac_map.display_path(path))
     else:
+        print(ac_map)
         print("no path found...")
 
     rclpy.init(args=args)
