@@ -1,132 +1,8 @@
-import json
-import math
-import os
 from enum import Enum
 from typing import Tuple, List
 
-from ament_index_python.packages import get_package_share_directory
-
-
-class Point:
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
-
-    def distance(self, other: 'Point'):
-        return math.sqrt(
-            (self.x - other.x) ** 2 +
-            (self.y - other.y) ** 2
-        )
-
-    def __floordiv__(self, other):
-        return Point(self.x // other, self.y // other)
-
-    def __repr__(self):
-        return f"Point(x={self.x}, y={self.y})"
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-
-class Obstacle:
-    def __init__(self, rotation: float, center: Point, width: int, height: int):
-        self.rotation = rotation
-        self.center = center
-        self.width = width
-        self.height = height
-
-    def is_inside(self, point: Point) -> bool:
-        # Translate the point to the rectangle's center
-        translated_x = point.x - self.center.x
-        translated_y = point.y - self.center.y
-
-        # Rotate the point back by the negative rotation angle
-        angle_rad = -self.rotation
-        rotated_x = (translated_x * math.cos(angle_rad) -
-                     translated_y * math.sin(angle_rad))
-        rotated_y = (translated_x * math.sin(angle_rad) +
-                     translated_y * math.cos(angle_rad))
-
-        # Check if the rotated point is within the bounds of the rectangle
-        half_width = self.width / 2
-        half_height = self.height / 2
-
-        return (-half_width <= rotated_x <= half_width and
-                -half_height <= rotated_y <= half_height)
-
-    def __repr__(self):
-        return (
-            f"Obstacle(rotation={self.rotation}, center={self.center}, "
-            f" width={self.width}, height={self.height})"
-        )
-
-
-class Station:
-    def __init__(self, obstacle: Obstacle, opening: Point):
-        self.obstacle = obstacle
-        self.opening = opening
-
-    def __repr__(self):
-        return f"Station(obstacle={self.obstacle}, opening={self.opening})"
-
-
-class MapData:
-    _obstacles: list[Obstacle]
-    _stations: list[Station]
-    width: int
-    height: int
-    cell_size: int
-
-    def read_file(self):
-        package_path = get_package_share_directory("route_manager")
-        json_file_path = os.path.join(package_path, "map.json")
-
-        with open(json_file_path, "r") as file:
-            data = json.load(file)
-
-        self.width = data["width"]
-        self.height = data["height"]
-        self.cell_size = data["cell_size"]
-
-        self._obstacles = []
-        self._stations = []
-
-        for obstacle in data["obstacles"]:
-            self._obstacles.append(
-                Obstacle(
-                    obstacle["rotation"],
-                    Point(obstacle["x"],
-                          obstacle["y"])
-                    ,
-                    obstacle["width"],
-                    obstacle["height"],
-                )
-            )
-
-        for station in data["stations"]:
-            obstacle = Obstacle(
-                station["rotation"],
-                Point(station["x"],
-                      station["y"])
-                ,
-                station["width"],
-                station["height"],
-            )
-            self._stations.append(
-                Station(obstacle, Point(station["opening"]["x"], station["opening"]["y"]))
-            )
-
-    def get_obstacles(self) -> list[Obstacle]:
-        data = []
-        data.extend(self._obstacles)
-
-        for station in self._stations:
-            data.append(station.obstacle)
-
-        return data
-
-    def get_stations(self) -> list[Station]:
-        return self._stations
+from .map_data import MapData, Station
+from .point import Point
 
 
 class CellState(Enum):
@@ -141,24 +17,17 @@ class PathNode:
         self.direction = direction
 
     def __repr__(self):
-        if self.direction == (0, -1):
-            return '↑'
-        elif self.direction == (0, 1):
-            return '↓'
-        elif self.direction == (-1, 0):
-            return '←'
-        elif self.direction == (1, 0):
-            return '→'
-        elif self.direction == (-1, -1):
-            return '↖'
-        elif self.direction == (-1, 1):
-            return '↙'
-        elif self.direction == (1, -1):
-            return '↗'
-        elif self.direction == (1, 1):
-            return '↘'
-        else:
-            return '✦'  # Default symbol if no direction matches
+        direction_map = {
+            (0, -1): '↑',
+            (0, 1): '↓',
+            (-1, 0): '←',
+            (1, 0): '→',
+            (-1, -1): '↖',
+            (-1, 1): '↙',
+            (1, -1): '↗',
+            (1, 1): '↘'
+        }
+        return direction_map.get(self.direction, '✦')
 
 
 def find_path_node(nodes_list, pos: Point):
@@ -182,15 +51,6 @@ class Node:
         return self.position == other.position
 
 
-def get_possible_next_tiles(direction: Tuple[int, int]) -> List[Tuple[int, int]]:
-    possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
-                (0, 1)]
-
-    index = possible.index((direction[0], direction[1]))
-
-    return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
-
-
 class Map:
     _cells: list[list[CellState]]
     _stations: List[Station]
@@ -204,12 +64,14 @@ class Map:
         self._stations = map_data.get_stations()
         self._cell_size = map_data.cell_size
 
+        # fill map with obstacle markers
         for obstacle in map_data.get_obstacles():
             for x in range(0, x_count):
                 for y in range(0, y_count):
                     if obstacle.is_inside(Point(x * map_data.cell_size, y * map_data.cell_size)):
                         self._cells[x][y] = CellState.OBSTACLE
 
+        # pad obstacle markers
         for x in range(0, x_count):
             for y in range(0, y_count):
                 if self._cells[x][y] != CellState.EMPTY:
@@ -218,22 +80,29 @@ class Map:
                 has_neighbor = False
 
                 for x_offset in range(-1, 2):
+                    if has_neighbor:
+                        break
+
                     for y_offset in range(-1, 2):
                         x_check = x + x_offset
                         y_check = y + y_offset
 
+                        # is center
                         if x_offset == y_offset and x_offset == 0:
                             continue
 
+                        # is outside bounds
                         if x_check < 0 or y_check < 0 or x_check >= x_count or y_check >= y_count:
                             continue
 
                         if self._cells[x_check][y_check] == CellState.OBSTACLE:
                             has_neighbor = True
+                            break
 
                 if has_neighbor:
                     self._cells[x][y] = CellState.PADDING
 
+        # give open path to station center
         for station in self._stations:
             center = station.obstacle.center // map_data.cell_size
             opening = station.opening // map_data.cell_size
@@ -241,22 +110,17 @@ class Map:
             for point in get_straight_line(center, opening):
                 self._cells[point.x][point.y] = CellState.EMPTY
 
-    def get_path(self, direction: Tuple[int, int], start: Point, goal_station: int) -> List[
-                                                                                           PathNode] | None:
-        # Create start and end node
+    def get_path(self, direction: Tuple[int, int], start: Point, goal_station: int) -> List[PathNode] | None:
         start_node = Node(direction, None, start)
         start_node.g = start_node.h = start_node.f = 0
         end_node = Node(None, None, self._stations[goal_station].obstacle.center // self._cell_size)
         end_node.g = end_node.h = end_node.f = 0
 
-        # Initialize both open and closed list
         open_list = []
         closed_list = []
 
-        # Add the start node
         open_list.append(start_node)
 
-        # Loop until you find the end
         while len(open_list) > 0:
 
             # Get the current node
@@ -282,7 +146,7 @@ class Map:
 
             # Generate children
             children = []
-            for offset in get_possible_next_tiles(current_node.direction):  # Adjacent squares
+            for offset in get_possible_next_directions(current_node.direction):  # Adjacent squares
 
                 # Get node position
                 node_position = Point(current_node.position.x + offset[0],
@@ -330,6 +194,38 @@ class Map:
                     # Otherwise, add the neighbor to the open list
                     open_list.append(child)
 
+    def simplify_path(self, nodes: List[PathNode]) -> List[PathNode]:
+        index = 2
+
+        while True:
+            if len(nodes) <= index:
+                break
+
+            prev = nodes[index - 2]
+            next = nodes[index]
+
+            next_directions = get_possible_next_directions(prev.direction)
+            if not next_directions.__contains__(next.direction):
+                index += 1
+                continue
+
+            if not self.is_straight_empty_line(next.position, prev.position):
+                index += 1
+                continue
+
+            nodes.pop(index - 1)
+
+        return nodes
+
+    def is_straight_empty_line(self, a: Point, b: Point) -> bool:
+        line_points = get_straight_line(a, b)
+
+        for point in line_points:
+            if self._cells[point.x][point.y] != CellState.EMPTY:
+                return False
+
+        return True
+
     def display_path(self, path: List[PathNode]) -> str:
         result = ""
 
@@ -352,38 +248,6 @@ class Map:
 
         return result
 
-    def simplify_path(self, nodes: List[PathNode]) -> List[PathNode]:
-        index = 2
-
-        while True:
-            if len(nodes) <= index:
-                break
-
-            prev = nodes[index - 2]
-            next = nodes[index]
-
-            next_directions = get_possible_next_tiles(prev.direction)
-            if not next_directions.__contains__(next.direction):
-                index += 1
-                continue
-
-            if not self.is_free_line(next.position, prev.position):
-                index += 1
-                continue
-
-            nodes.pop(index - 1)
-
-        return nodes
-
-    def is_free_line(self, a: Point, b: Point) -> bool:
-        line_points = get_straight_line(a, b)
-
-        for point in line_points:
-            if self._cells[point.x][point.y] != CellState.EMPTY:
-                return False
-
-        return True
-
     def __repr__(self):
         result = ""
 
@@ -403,7 +267,6 @@ class Map:
 
 
 def get_straight_line(a: Point, b: Point) -> List[Point]:
-    # Calculate differences
     dx = abs(b.x - a.x)
     dy = abs(b.y - a.y)
     sx = 1 if a.x < b.x else -1
@@ -413,9 +276,9 @@ def get_straight_line(a: Point, b: Point) -> List[Point]:
     points = []
 
     while True:
-        points.append(a)  # Add current point to the list
+        points.append(a)
         if a == b:
-            break  # Break when the endpoint is reached
+            break
 
         e2 = 2 * err
         if e2 > -dy:
@@ -426,3 +289,12 @@ def get_straight_line(a: Point, b: Point) -> List[Point]:
             a = Point(a.x, a.y + sy)
 
     return points
+
+
+def get_possible_next_directions(direction: Tuple[int, int]) -> List[Tuple[int, int]]:
+    possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
+                (0, 1)]
+
+    index = possible.index((direction[0], direction[1]))
+
+    return [possible[index], possible[(index + 1) % len(possible)], possible[index - 1]]
