@@ -18,16 +18,16 @@ class PathNode:
 
     def __repr__(self):
         direction_map = {
-            (0, -1): '↑',
-            (0, 1): '↓',
-            (-1, 0): '←',
-            (1, 0): '→',
-            (-1, -1): '↖',
-            (-1, 1): '↙',
-            (1, -1): '↗',
-            (1, 1): '↘'
+            (0, -1): "↑",
+            (0, 1): "↓",
+            (-1, 0): "←",
+            (1, 0): "→",
+            (-1, -1): "↖",
+            (-1, 1): "↙",
+            (1, -1): "↗",
+            (1, 1): "↘",
         }
-        return direction_map.get(self.direction, '✦')
+        return direction_map.get(self.direction, "✦")
 
 
 def find_path_node(nodes_list, pos: Point):
@@ -38,7 +38,12 @@ def find_path_node(nodes_list, pos: Point):
 
 
 class Node:
-    def __init__(self, direction: Tuple[int, int] = None, parent: 'Node' = None, position: Point = None):
+    def __init__(
+        self,
+        direction: Tuple[int, int] = None,
+        parent: "Node" = None,
+        position: Point = None,
+    ):
         self.parent = parent
         self.position = position
         self.direction = direction
@@ -60,7 +65,9 @@ class Map:
         x_count = int(map_data.width / map_data.cell_size)
         y_count = int(map_data.height / map_data.cell_size)
 
-        self._cells = [[CellState.EMPTY for _ in range(x_count)] for _ in range(y_count)]
+        self._cells = [
+            [CellState.EMPTY for _ in range(x_count)] for _ in range(y_count)
+        ]
         self._stations = map_data.get_stations()
         self._cell_size = map_data.cell_size
 
@@ -68,7 +75,9 @@ class Map:
         for obstacle in map_data.get_obstacles():
             for x in range(0, x_count):
                 for y in range(0, y_count):
-                    if obstacle.is_inside(Point(x * map_data.cell_size, y * map_data.cell_size)):
+                    if obstacle.is_inside(
+                        Point(x * map_data.cell_size, y * map_data.cell_size)
+                    ):
                         self._cells[x][y] = CellState.OBSTACLE
 
         # pad obstacle markers
@@ -92,7 +101,12 @@ class Map:
                             continue
 
                         # is outside bounds
-                        if x_check < 0 or y_check < 0 or x_check >= x_count or y_check >= y_count:
+                        if (
+                            x_check < 0
+                            or y_check < 0
+                            or x_check >= x_count
+                            or y_check >= y_count
+                        ):
                             continue
 
                         if self._cells[x_check][y_check] == CellState.OBSTACLE:
@@ -110,10 +124,14 @@ class Map:
             for point in get_straight_line(center, opening):
                 self._cells[point.x][point.y] = CellState.EMPTY
 
-    def get_path(self, direction: Tuple[int, int], start: Point, goal_station: int) -> List[PathNode] | None:
+    def get_path(
+        self, direction: Tuple[int, int], start: Point, goal_station: int
+    ) -> List[PathNode] | None:
         start_node = Node(direction, None, start)
         start_node.g = start_node.h = start_node.f = 0
-        end_node = Node(None, None, self._stations[goal_station].obstacle.center // self._cell_size)
+        end_node = Node(
+            None, None, self._stations[goal_station].obstacle.center // self._cell_size
+        )
         end_node.g = end_node.h = end_node.f = 0
 
         open_list = []
@@ -122,7 +140,6 @@ class Map:
         open_list.append(start_node)
 
         while len(open_list) > 0:
-
             # Get the current node
             current_node = open_list[0]
             current_index = 0
@@ -146,15 +163,22 @@ class Map:
 
             # Generate children
             children = []
-            for offset in get_possible_next_directions(current_node.direction):  # Adjacent squares
-
+            for offset in get_possible_next_directions(
+                current_node.direction
+            ):  # Adjacent squares
                 # Get node position
-                node_position = Point(current_node.position.x + offset[0],
-                                      current_node.position.y + offset[1])
+                node_position = Point(
+                    current_node.position.x + offset[0],
+                    current_node.position.y + offset[1],
+                )
 
                 # Make sure within range
-                if node_position.x > (len(self._cells) - 1) or node_position.x < 0 or node_position.y > (
-                        len(self._cells[len(self._cells) - 1]) - 1) or node_position.y < 0:
+                if (
+                    node_position.x > (len(self._cells) - 1)
+                    or node_position.x < 0
+                    or node_position.y > (len(self._cells[len(self._cells) - 1]) - 1)
+                    or node_position.y < 0
+                ):
                     continue
 
                 # Make sure walkable terrain
@@ -163,26 +187,34 @@ class Map:
 
                 # Create new node
                 new_node = Node(
-                    (node_position.x - current_node.position.x, node_position.y - current_node.position.y),
-                    current_node, node_position)
+                    (
+                        node_position.x - current_node.position.x,
+                        node_position.y - current_node.position.y,
+                    ),
+                    current_node,
+                    node_position,
+                )
 
                 # Append
                 children.append(new_node)
 
             # Loop through children
             for child in children:
-
                 # Child is on the closed list
                 if child in closed_list:
                     continue
 
                 # Create the f, g, and h values
-                child.g = current_node.g + current_node.position.distance(child.position)
+                child.g = current_node.g + current_node.position.distance(
+                    child.position
+                )
                 child.h = child.position.distance(end_node.position)
                 child.f = child.g + child.h
 
                 # Check if this neighbor is in the open list
-                existing_node = next((node for node in open_list if node == child), None)
+                existing_node = next(
+                    (node for node in open_list if node == child), None
+                )
 
                 if existing_node:
                     # If the new path is better, update the existing node
@@ -292,8 +324,7 @@ def get_straight_line(a: Point, b: Point) -> List[Point]:
 
 
 def get_possible_next_directions(direction: Tuple[int, int]) -> List[Tuple[int, int]]:
-    possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1),
-                (0, 1)]
+    possible = [(1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
 
     index = possible.index((direction[0], direction[1]))
 

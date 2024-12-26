@@ -6,11 +6,8 @@ class Point:
         self.x = x
         self.y = y
 
-    def distance(self, other: 'Point'):
-        return math.sqrt(
-            (self.x - other.x) ** 2 +
-            (self.y - other.y) ** 2
-        )
+    def distance(self, other: "Point"):
+        return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
     def __floordiv__(self, other):
         return Point(self.x // other, self.y // other)

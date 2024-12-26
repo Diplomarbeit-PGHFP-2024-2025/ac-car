@@ -21,17 +21,21 @@ class Obstacle:
 
         # Rotate the point back by the negative rotation angle
         angle_rad = -self.rotation
-        rotated_x = (translated_x * math.cos(angle_rad) -
-                     translated_y * math.sin(angle_rad))
-        rotated_y = (translated_x * math.sin(angle_rad) +
-                     translated_y * math.cos(angle_rad))
+        rotated_x = translated_x * math.cos(angle_rad) - translated_y * math.sin(
+            angle_rad
+        )
+        rotated_y = translated_x * math.sin(angle_rad) + translated_y * math.cos(
+            angle_rad
+        )
 
         # Check if the rotated point is within the bounds of the rectangle
         half_width = self.width / 2
         half_height = self.height / 2
 
-        return (-half_width <= rotated_x <= half_width and
-                -half_height <= rotated_y <= half_height)
+        return (
+            -half_width <= rotated_x <= half_width
+            and -half_height <= rotated_y <= half_height
+        )
 
     def __repr__(self):
         return (
@@ -74,9 +78,7 @@ class MapData:
             self._obstacles.append(
                 Obstacle(
                     obstacle["rotation"],
-                    Point(obstacle["x"],
-                          obstacle["y"])
-                    ,
+                    Point(obstacle["x"], obstacle["y"]),
                     obstacle["width"],
                     obstacle["height"],
                 )
@@ -85,14 +87,14 @@ class MapData:
         for station in data["stations"]:
             obstacle = Obstacle(
                 station["rotation"],
-                Point(station["x"],
-                      station["y"])
-                ,
+                Point(station["x"], station["y"]),
                 station["width"],
                 station["height"],
             )
             self._stations.append(
-                Station(obstacle, Point(station["opening"]["x"], station["opening"]["y"]))
+                Station(
+                    obstacle, Point(station["opening"]["x"], station["opening"]["y"])
+                )
             )
 
     def get_obstacles(self) -> list[Obstacle]:
