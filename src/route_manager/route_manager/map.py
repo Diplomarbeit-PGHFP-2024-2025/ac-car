@@ -237,7 +237,7 @@ class Map:
             next = nodes[index]
 
             next_directions = get_possible_next_directions(prev.direction)
-            if not next_directions.__contains__(next.direction):
+            if next.direction not in next_directions:
                 index += 1
                 continue
 
