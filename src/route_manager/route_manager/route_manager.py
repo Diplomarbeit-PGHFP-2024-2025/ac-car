@@ -4,7 +4,7 @@ from rclpy.node import Node
 
 from custom_action_interfaces.action import Fibonacci
 
-from .map import Map
+from .map import MapData, Map, Point
 
 
 class FibonacciActionServer(Node):
@@ -21,10 +21,20 @@ class FibonacciActionServer(Node):
 
 
 def main(args=None):
-    ac_map = Map()
-    ac_map.read_file()
-    print("obstacles", ac_map.get_obstacles())
-    print("station", ac_map.get_stations())
+    ac_map_data = MapData()
+    ac_map_data.read_file()
+    print("obstacles", ac_map_data.get_obstacles())
+    print("station", ac_map_data.get_stations())
+
+    ac_map = Map(ac_map_data)
+    path = ac_map.get_path((1, 0), Point(15, 15), 0)
+
+    if path is not None:
+        path = ac_map.simplify_path(path)
+        print(ac_map.display_path(path))
+    else:
+        print(ac_map)
+        print("no path found...")
 
     rclpy.init(args=args)
 
