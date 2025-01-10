@@ -3,6 +3,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 
 from custom_action_interfaces.action import Fibonacci
+from custom_action_interfaces.action import DrivingEngine
 
 from uagents import Context
 
@@ -15,8 +16,22 @@ from .communication import fetch_stations
 async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     initialize_car_properties(ctx)
+
+    test = DrivingEngine()
+    test.test()
+
     await fetch_stations(ctx)
 
+class DrivingEngineTest(Node):
+    def __init__(self):
+        super().__init__('driving_engine_test')
+        self._action_client = ActionClient(self, DrivingEngine, "driving_engine")
+
+    def test(self):
+        msg = DrivingEngine.Goal()
+        self._action_client.wait_for_server()
+        result = self._action_client.send_goal_async(msg)
+        print(result)
 
 class MinimalPublisher(Node):
     def __init__(self):
