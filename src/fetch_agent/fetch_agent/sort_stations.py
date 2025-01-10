@@ -10,9 +10,9 @@ json_key_stations_properties_map: str = "stations_properties_map"
 
 class PropertyCarData:
     def __init__(self,
-                 green_energy: bool,
+                 green_energy: flaot,
                  cost_per_kwh: float,
-                 charging_wattage: int,
+                 charging_wattage: float,
                  max_km: int,
                  time_frames: List[Tuple[int, int]]):
         self.green_energy = green_energy
@@ -33,7 +33,7 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
     for item in serialized_properties:
         unserialized_properties.append((item[0], PropertyData.from_json(item[1])))
 
-    return filter_stations(ctx, unserialized_properties)
+    return unserialized_properties
 
 
 def filter_stations(ctx: Context, stations: list[Tuple[str, PropertyData]]) -> list[Tuple[str, PropertyData]]:
@@ -133,7 +133,7 @@ def initialize_car_properties(ctx: Context):
 
 
 def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
-    stations_properties = _read_stations_properties_map(ctx)
+    stations_properties = filter_stations(ctx, _read_stations_properties_map(ctx))
 
     # test stuff
     open_timeframes = [
@@ -158,7 +158,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
 
     if not stations_properties:  # case no station responded
         ctx.logger.warning(
-            f"[Sort Stations, sort_stations]: No station responded. Here is nothing to filter: {stations_properties}. So there is no optimal station"
+            f"[Sort Stations, sort_stations]: Here is nothing to filter: {stations_properties}. So there is no optimal station"
         )
 
         return "NO STATION", None, None
@@ -200,7 +200,7 @@ def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
     # green_energy
     stations_green_energy_sorted = sorted(
         stations_properties,
-        key=lambda to_sort: to_sort[1].charging_wattage
+        key=lambda to_sort: to_sort[1].green_energy
     )
 
     stations_green_energy_len = len(stations_green_energy_sorted)

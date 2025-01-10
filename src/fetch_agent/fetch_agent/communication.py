@@ -68,7 +68,6 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
 
 async def fetch_stations(ctx: Context):
     car_geo_point = ctx.storage.get("car_geo_point")
-    print(car_geo_point)
 
     await ctx.send(
         acs_id,
