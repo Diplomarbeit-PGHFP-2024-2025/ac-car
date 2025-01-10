@@ -10,7 +10,7 @@ json_key_stations_properties_map: str = "stations_properties_map"
 
 class PropertyCarData:
     def __init__(self,
-                 green_energy: flaot,
+                 green_energy: float,
                  cost_per_kwh: float,
                  charging_wattage: float,
                  max_km: int,
