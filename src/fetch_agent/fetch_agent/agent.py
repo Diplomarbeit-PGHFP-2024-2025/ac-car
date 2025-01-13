@@ -49,17 +49,17 @@ class MinimalPublisher(Node):
     def goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().info('Goal rejected :(')
+            self.get_logger().info("Goal rejected :(")
             return
 
-        self.get_logger().info('Goal accepted :)')
+        self.get_logger().info("Goal accepted :)")
 
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
     def get_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info('Result: {0}'.format(result.path))
+        self.get_logger().info("Result: {0}".format(result.path))
 
 
 def main():
