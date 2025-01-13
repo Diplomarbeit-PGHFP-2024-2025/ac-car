@@ -1,10 +1,8 @@
-import math
-
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 
-from custom_action_interfaces.action import Path
+from custom_action_interfaces.action import DriveTo
 
 from uagents import Context
 
@@ -22,7 +20,7 @@ async def introduce_agent(ctx: Context):
     rclpy.init()
 
     minimal_publisher = MinimalPublisher()
-    minimal_publisher.fetch_path(15, 15, math.pi, 0)
+    minimal_publisher.fetch_path(0)
 
     rclpy.spin(minimal_publisher)
 
@@ -30,15 +28,12 @@ async def introduce_agent(ctx: Context):
 class MinimalPublisher(Node):
     def __init__(self):
         super().__init__("minimal_publisher")
-        self._action_client = ActionClient(self, Path, "path")
+        self._action_client = ActionClient(self, DriveTo, "drive_to")
 
-    def fetch_path(self, x: int, y: int, car_rotation: float, target_station: int):
-        goal_msg = Path.Goal()
+    def fetch_path(self, target_station: int):
+        goal_msg = DriveTo.Goal()
 
-        goal_msg.x = x
-        goal_msg.y = y
-        goal_msg.rotation = car_rotation
-        goal_msg.target = target_station
+        goal_msg.target_station = target_station
 
         self._action_client.wait_for_server()
 
@@ -59,7 +54,7 @@ class MinimalPublisher(Node):
 
     def get_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info("Result: {0}".format(result.path))
+        self.get_logger().info("Result: {}".format(result.status_code))
 
 
 def main():
