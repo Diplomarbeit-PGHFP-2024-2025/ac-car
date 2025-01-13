@@ -11,7 +11,7 @@ init:
 
 install:
     python3 -m pip install uagents==0.17.1
-    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@cb30517492fa3555847de7ee8d5fc10596364a91
+    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@038a64cb06671faa5eb0593d035eb94fa249396a
     python3 -m pip install ruff
     python3 -m pip install python-dotenv
 
