@@ -26,7 +26,8 @@ endif()
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/Fibonacci.action"
+  "msg/Location.msg"
+  "action/Path.action"
 )
 
 ament_package()
