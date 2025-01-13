@@ -1,3 +1,5 @@
+import math
+
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -20,7 +22,7 @@ async def introduce_agent(ctx: Context):
     rclpy.init()
 
     minimal_publisher = MinimalPublisher()
-    minimal_publisher.send_goal("")
+    minimal_publisher.fetch_path(15, 15, math.pi, 0)
 
     rclpy.spin(minimal_publisher)
 
@@ -30,9 +32,13 @@ class MinimalPublisher(Node):
         super().__init__("minimal_publisher")
         self._action_client = ActionClient(self, Path, "path")
 
-    def send_goal(self, order):
+    def fetch_path(self, x: int, y: int, car_rotation: float, target_station: int):
         goal_msg = Path.Goal()
-        print(goal_msg)
+
+        goal_msg.x = x
+        goal_msg.y = y
+        goal_msg.rotation = car_rotation
+        goal_msg.target = target_station
 
         self._action_client.wait_for_server()
 

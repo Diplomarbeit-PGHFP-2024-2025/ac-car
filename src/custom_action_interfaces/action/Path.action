@@ -3,6 +3,6 @@ int32 y
 float32 rotation
 int32 target
 ---
-custom_action_interfaces/Location path
+custom_action_interfaces/Location[] path
 ---
 int32 status
