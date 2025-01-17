@@ -1,6 +1,7 @@
 import math
 
 from .algorithms import drive_to
+from .driving_command import DrivingCommand
 from custom_action_interfaces.action import DriveTo
 from custom_action_interfaces.action import Path
 
@@ -63,10 +64,34 @@ class DrivingEngine(Node):
 
         path = result.path
 
-        print(path)
-        drive_to((0, 0), (0, 1), (0, 10), (1, 1))
+        driving_radius = 6
 
-        # TODO - your code here
+        last_point = (0, 0)
+        updated_path = []
+        for point in path[1::]:
+            updated_path.append((last_point, (point[0] - last_point[0], point[1] - last_point[1])))
+            last_point = point
+        updated_path.append((last_point, updated_path[-1][1]))
+
+        last_point = updated_path[0]
+        final_path = []
+        for point in updated_path[1::]:
+            new_start, new_next, angle = drive_to(last_point[0], last_point[1], point[0], point[1], driving_radius)
+
+            straight_distance = distance(last_point, new_start)
+            final_path.append(DrivingCommand(straight_distance, None))
+
+            if angle == 0:
+                straight_distance = distance(new_start, new_next)
+                final_path.append(DrivingCommand(straight_distance, None))
+            else:
+                angle_distance = (2 * driving_radius * math.pi * angle) / (2 * math.pi)
+                final_path.append(DrivingCommand(angle_distance, angle))
+
+        # TODO perform instructions via ros
+
+def distance(a, b):
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
 
 def main(args=None):
