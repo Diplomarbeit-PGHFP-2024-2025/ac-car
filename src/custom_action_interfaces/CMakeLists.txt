@@ -28,7 +28,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/DriveTo.action"
   "msg/Location.msg"
-  "action/Path.action"
+  "srv/GetPath.srv"
 )
 
 ament_package()

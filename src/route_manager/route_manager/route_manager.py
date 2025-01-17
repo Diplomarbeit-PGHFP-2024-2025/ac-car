@@ -1,10 +1,9 @@
 import math
 
 import rclpy
-from rclpy.action import ActionServer
 from rclpy.node import Node
 
-from custom_action_interfaces.action import Path
+from custom_action_interfaces.srv import GetPath
 from custom_action_interfaces.msg import Location
 
 from .map import MapData, Map, Point
@@ -13,13 +12,13 @@ from .map import MapData, Map, Point
 class PathActionServer(Node):
     def __init__(self):
         super().__init__("path_action_server")
-        self._action_server = ActionServer(self, Path, "path", self.execute_callback)
+        self.srv = self.create_service(GetPath, 'get_path', self.get_path)
 
-    def execute_callback(self, goal_handle):
-        x = goal_handle.request.x
-        y = goal_handle.request.y
-        target_station = goal_handle.request.target
-        car_rotation = goal_handle.request.rotation
+    def get_path(self, request, response):
+        x = request.x
+        y = request.y
+        target_station = request.target
+        car_rotation = request.rotation
 
         self.get_logger().info(
             "stating path calculation goal... x:{} y:{} rotation:{} target_station:{} ".format(
@@ -50,12 +49,8 @@ class PathActionServer(Node):
                 Location(point=[path_point.position.x, path_point.position.y])
             )
 
-        goal_handle.succeed()
-        result = Path.Result()
-
-        result.path = path_points
-
-        return result
+        response.path = path_points
+        return response
 
 
 def main(args=None):

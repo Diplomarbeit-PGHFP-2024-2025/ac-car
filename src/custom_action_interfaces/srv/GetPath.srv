@@ -4,5 +4,3 @@ float32 rotation
 int32 target
 ---
 custom_action_interfaces/Location[] path
----
-int32 status
