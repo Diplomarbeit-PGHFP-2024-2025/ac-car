@@ -1,12 +1,14 @@
 import math
 
 
-def drive_to(current_position, current_direction, next_position, next_direction, driving_radius):
+def drive_to(
+    current_position, current_direction, next_position, next_direction, driving_radius
+):
     current_normal = (current_direction[1], -current_direction[0])
     next_normal = (next_direction[1], -next_direction[0])
 
     cos_theta = dot_product(current_normal, next_normal) / (
-            magnitude(current_normal) * magnitude(next_normal)
+        magnitude(current_normal) * magnitude(next_normal)
     )
     cos_theta = max(-1, min(1, cos_theta))
 

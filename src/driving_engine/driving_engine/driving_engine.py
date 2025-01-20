@@ -1,4 +1,3 @@
-import asyncio
 import math
 from typing import List
 
@@ -9,7 +8,7 @@ from custom_action_interfaces.srv import GetPath
 from custom_action_interfaces.msg import Location
 
 import rclpy
-from rclpy.action import ActionClient, ActionServer
+from rclpy.action import ActionServer
 from rclpy.node import Node
 
 
@@ -17,7 +16,7 @@ class DrivingEngine(Node):
     def __init__(self):
         super().__init__("drive_to_action_client")
 
-        self._get_path_client = self.create_client(GetPath, 'get_path')
+        self._get_path_client = self.create_client(GetPath, "get_path")
         self._action_server = ActionServer(
             self, DriveTo, "drive_to", self.execute_callback
         )
@@ -31,12 +30,16 @@ class DrivingEngine(Node):
         driving_radius = 6
 
         target_station = goal_handle.request.target_station
-        path = await self.fetch_path(current_position[0], current_position[1], current_angle, target_station)
+        path = await self.fetch_path(
+            current_position[0], current_position[1], current_angle, target_station
+        )
 
         last_point = current_position
         updated_path = []
         for point in path[1::]:
-            updated_path.append((last_point, (point[0] - last_point[0], point[1] - last_point[1])))
+            updated_path.append(
+                (last_point, (point[0] - last_point[0], point[1] - last_point[1]))
+            )
             last_point = point
         updated_path.append((last_point, updated_path[-1][1]))
 
@@ -46,7 +49,9 @@ class DrivingEngine(Node):
         last_point = updated_path[0]
         final_path = []
         for point in updated_path[1::]:
-            new_start, new_next, angle = drive_to(last_point[0], last_point[1], point[0], point[1], driving_radius)
+            new_start, new_next, angle = drive_to(
+                last_point[0], last_point[1], point[0], point[1], driving_radius
+            )
 
             straight_distance = distance(last_point, new_start)
             final_path.append(DrivingCommand(straight_distance, None))
@@ -73,7 +78,9 @@ class DrivingEngine(Node):
 
         return result
 
-    async def fetch_path(self, x: int, y: int, car_rotation: float, target_station: int) -> List[Location]:
+    async def fetch_path(
+        self, x: int, y: int, car_rotation: float, target_station: int
+    ) -> List[Location]:
         get_path_req = GetPath.Request()
 
         get_path_req.x = x
@@ -82,7 +89,7 @@ class DrivingEngine(Node):
         get_path_req.target = target_station
 
         while not self._get_path_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('GetPath service not available, waiting again...')
+            self.get_logger().info("GetPath service not available, waiting again...")
 
         print("call")
         response = await self._get_path_client.call_async(get_path_req)

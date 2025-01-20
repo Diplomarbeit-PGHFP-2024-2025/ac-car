@@ -12,7 +12,7 @@ from .map import MapData, Map, Point
 class PathActionServer(Node):
     def __init__(self):
         super().__init__("path_action_server")
-        self.srv = self.create_service(GetPath, 'get_path', self.get_path)
+        self.srv = self.create_service(GetPath, "get_path", self.get_path)
 
     def get_path(self, request, response):
         x = request.x
