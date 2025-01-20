@@ -2,6 +2,7 @@ set shell := ["bash", "-c"]
 
 mod agent
 mod route
+mod drive
 
 init:
     python3 -m venv ./venv --system-site-packages --symlinks
