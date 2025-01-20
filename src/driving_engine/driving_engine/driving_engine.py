@@ -25,17 +25,23 @@ class DrivingEngine(Node):
     async def execute_callback(self, goal_handle):
         self.get_logger().info("got drive request")
 
-        target_station = goal_handle.request.target_station
-        path = await self.fetch_path(15, 15, math.pi, target_station)
-
+        # TODO should represent real car data
+        current_position = (15, 15)
+        current_angle = math.pi
         driving_radius = 6
 
-        last_point = (0, 0)
+        target_station = goal_handle.request.target_station
+        path = await self.fetch_path(current_position[0], current_position[1], current_angle, target_station)
+
+        last_point = current_position
         updated_path = []
         for point in path[1::]:
             updated_path.append((last_point, (point[0] - last_point[0], point[1] - last_point[1])))
             last_point = point
         updated_path.append((last_point, updated_path[-1][1]))
+
+        current_direction = (math.cos(current_angle), math.sin(current_angle))
+        updated_path[0][1] = current_direction
 
         last_point = updated_path[0]
         final_path = []
@@ -52,7 +58,13 @@ class DrivingEngine(Node):
                 angle_distance = (2 * driving_radius * math.pi * angle) / (2 * math.pi)
                 final_path.append(DrivingCommand(angle_distance, angle))
 
-        # TODO perform instructions via ros
+        for instruction in final_path:
+            if instruction.angle is None:
+                # TODO send angle command to car
+                pass
+            else:
+                # TODO send straight command to car
+                pass
 
         goal_handle.succeed()
         result = DriveTo.Result()
@@ -78,6 +90,7 @@ class DrivingEngine(Node):
         path = response.path
 
         return path
+
 
 def distance(a, b):
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
