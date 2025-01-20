@@ -1,0 +1,9 @@
+float32 green_energy
+float32 cost_per_kwh
+float32 charging_wattage
+int32 max_km
+int8 target_soc
+---
+string status
+---
+string status
