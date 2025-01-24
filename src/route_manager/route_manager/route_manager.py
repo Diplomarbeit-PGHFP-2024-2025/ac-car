@@ -17,12 +17,13 @@ class PathActionServer(Node):
     def get_path(self, request, response):
         x = request.x
         y = request.y
-        target_station = request.target
+        target_station_x = request.target_x
+        target_station_y = request.target_y
         car_rotation = request.rotation
 
         self.get_logger().info(
-            "stating path calculation goal... x:{} y:{} rotation:{} target_station:{} ".format(
-                x, y, car_rotation, target_station
+            "stating path calculation goal... x:{} y:{} rotation:{} target_station_x:{}  target_station_y:{}".format(
+                x, y, car_rotation, target_station_x, target_station_y
             )
         )
         ac_map_data = MapData()
@@ -30,10 +31,17 @@ class PathActionServer(Node):
 
         ac_map = Map(ac_map_data)
 
+        station_index = ac_map.get_station_id_from_cord(target_station_x, target_station_y)
+
+        if station_index == -1:
+            print("no station found...")
+            response.path = []
+            return response
+
         path = ac_map.get_path(
             (round(math.cos(car_rotation)), round(math.sin(car_rotation))),
             Point(x, y),
-            target_station,
+            station_index,
         )
 
         if path is not None:

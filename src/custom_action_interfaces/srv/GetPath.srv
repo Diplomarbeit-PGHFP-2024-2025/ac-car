@@ -1,6 +1,7 @@
 int32 x
 int32 y
 float32 rotation
-int32 target
+float32 target_x
+float32 target_y
 ---
 custom_action_interfaces/Location[] path

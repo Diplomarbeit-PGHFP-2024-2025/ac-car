@@ -29,9 +29,11 @@ class DrivingEngine(Node):
         current_angle = math.pi
         driving_radius = 6
 
-        target_station = goal_handle.request.target_station
+        target_station_x = goal_handle.request.target_station_x
+        target_station_y = goal_handle.request.target_station_y
+
         path = await self.fetch_path(
-            current_position[0], current_position[1], current_angle, target_station
+            current_position[0], current_position[1], current_angle, target_station_x, target_station_y
         )
 
         last_point = current_position
@@ -79,14 +81,15 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-        self, x: int, y: int, car_rotation: float, target_station: int
+            self, x: int, y: int, car_rotation: float, target_station_x: float, target_station_y: float
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
         get_path_req.x = x
         get_path_req.y = y
         get_path_req.rotation = car_rotation
-        get_path_req.target = target_station
+        get_path_req.target_x = target_station_x
+        get_path_req.target_y = target_station_y
 
         while not self._get_path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
