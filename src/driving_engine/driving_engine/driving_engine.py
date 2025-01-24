@@ -33,7 +33,11 @@ class DrivingEngine(Node):
         target_station_y = goal_handle.request.target_station_y
 
         path = await self.fetch_path(
-            current_position[0], current_position[1], current_angle, target_station_x, target_station_y
+            current_position[0],
+            current_position[1],
+            current_angle,
+            target_station_x,
+            target_station_y,
         )
 
         last_point = current_position
@@ -81,7 +85,12 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-            self, x: int, y: int, car_rotation: float, target_station_x: float, target_station_y: float
+        self,
+        x: int,
+        y: int,
+        car_rotation: float,
+        target_station_x: float,
+        target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 

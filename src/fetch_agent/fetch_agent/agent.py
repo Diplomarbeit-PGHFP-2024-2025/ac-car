@@ -38,36 +38,39 @@ class MinimalPublisher(Node):
         self.current_location = (0, 0)
 
         self._action_server = ActionServer(
-            self,
-            DriveToStation,
-            'drive_to_station',
-            self.execute_drive_to)
-        self.get_logger().info('started action server...')
-
+            self, DriveToStation, "drive_to_station", self.execute_drive_to
+        )
+        self.get_logger().info("started action server...")
 
     async def execute_drive_to(self, goal_handle):
-        self.get_logger().info('Executing goal...')
-        target_soc = goal_handle.request.target_soc
+        self.get_logger().info("Executing goal...")
+        _target_soc = goal_handle.request.target_soc
 
         green_energy = goal_handle.request.green_energy
         cost_per_kwh = goal_handle.request.cost_per_kwh
         charging_wattage = goal_handle.request.charging_wattage
         max_km = goal_handle.request.max_km
 
-        set_car_properties(self.ctx, green_energy, cost_per_kwh, charging_wattage, max_km)
+        set_car_properties(
+            self.ctx, green_energy, cost_per_kwh, charging_wattage, max_km
+        )
 
-        station_id, station_property, time_frame = await fetch_stations(self.ctx, self.current_location)
+        station_id, station_property, time_frame = await fetch_stations(
+            self.ctx, self.current_location
+        )
 
         if not station_id == "NO STATION":
             await register_at_station(self.ctx, station_id, time_frame)
 
         self.drove_to_station_future = asyncio.Future()
-        self.drive_to_station(station_property.geo_point[0], station_property.geo_point[1])
+        self.drive_to_station(
+            station_property.geo_point[0], station_property.geo_point[1]
+        )
 
         drove_to_result = await self.drove_to_station_future
         self.get_logger().info(f"drove_to_result: {drove_to_result}")
 
-        #todo - call start charging
+        # todo - call start charging
 
         goal_handle.succeed()
 

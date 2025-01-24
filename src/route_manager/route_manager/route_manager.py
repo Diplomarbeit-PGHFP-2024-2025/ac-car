@@ -31,7 +31,9 @@ class PathActionServer(Node):
 
         ac_map = Map(ac_map_data)
 
-        station_index = ac_map.get_station_id_from_cord(target_station_x, target_station_y)
+        station_index = ac_map.get_station_id_from_cord(
+            target_station_x, target_station_y
+        )
 
         if station_index == -1:
             print("no station found...")
