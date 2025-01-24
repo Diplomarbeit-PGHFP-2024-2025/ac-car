@@ -32,7 +32,7 @@ class MinimalPublisher(Node):
         super().__init__("minimal_publisher")
         self._action_client = ActionClient(self, DriveTo, "drive_to")
 
-        self.context = ctx
+        self.ctx = ctx
 
         # todo - get value from somewhere...
         self.current_location = (0, 0)
@@ -40,8 +40,10 @@ class MinimalPublisher(Node):
         self._action_server = ActionServer(
             self,
             DriveToStation,
-            'driveToStation',
+            'drive_to_station',
             self.execute_drive_to)
+        self.get_logger().info('started action server...')
+
 
     async def execute_drive_to(self, goal_handle):
         self.get_logger().info('Executing goal...')
