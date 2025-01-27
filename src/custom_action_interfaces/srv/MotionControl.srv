@@ -1,0 +1,10 @@
+# Message sent from the neuronal network on RPi to uC to control which path to drive
+uint16 id               # Command id: used for tracing of currently executed command in VehicleData msg
+uint64 rostime          # timetamp from ROS environment
+uint32 velocity         # target velocity in mm/s
+uint32 arc_length       # L = length of the arc in mm
+int32  angle            # Theta = Angle at the center of the circle in mrad
+bool   override         # Override flag; deletes the current and all pending arc commands if set; appends a subsequent arc to the execution list otherwise
+---
+bool accepted               # true if the command has been accepted and queued
+int8 current_queue_length   # current length of the motion commands queue

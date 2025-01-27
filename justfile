@@ -26,3 +26,6 @@ lint:
 fix:
     ruff check --fix
     ruff format
+
+send_drive_to:
+    ros2 action send_goal /drive_to_station custom_action_interfaces/action/DriveToStation "{green_energy: 1.57, cost_per_kwh: 3.5, charging_wattage: 0.1, max_km: 200, target_soc: 80}"

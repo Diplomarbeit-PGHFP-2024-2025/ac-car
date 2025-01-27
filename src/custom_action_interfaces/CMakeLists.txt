@@ -27,6 +27,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/DriveTo.action"
+  "action/DriveToStation.action"
+  "action/StartCharging.action"
   "msg/Location.msg"
   "srv/GetPath.srv"
 )
