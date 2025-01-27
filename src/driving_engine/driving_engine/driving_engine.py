@@ -5,6 +5,7 @@ from .algorithms import drive_to
 from .driving_command import DrivingCommand
 from custom_action_interfaces.action import DriveTo
 from custom_action_interfaces.srv import GetPath
+from custom_action_interfaces.srv import MotionControl
 from custom_action_interfaces.msg import Location
 
 import rclpy
@@ -20,6 +21,29 @@ class DrivingEngine(Node):
         self._action_server = ActionServer(
             self, DriveTo, "drive_to", self.execute_callback
         )
+
+    def send_command(
+            self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
+    ):
+        msg = MotionControl.Request()
+        msg.id = cmd_id
+        msg.velocity = int(velocity * 1000)  # velocity m/s -> mm/s
+        msg.arc_length = int(arc_length * 1000)  # arcLength m -> mm
+        msg.angle = int(angle * 1000)  # angle rad -> mrad
+        msg.override = override
+        self.get_logger().info(f"Sending command: {msg}")
+        self.future = self.client.call_async(msg)
+        rclpy.spin_until_future_complete(self, self.future, timeout_sec=self.timeout)
+        if self.future.done():
+            try:
+                response = self.future.result()
+                self.get_logger().info(f"Response: {response}")
+                return response
+            except Exception as e:
+                self.get_logger().error(f"Service call failed: {e}")
+        else:
+            self.get_logger().error("Service call failed: timeout")
+        return None
 
     async def execute_callback(self, goal_handle):
         self.get_logger().info("got drive request")
@@ -71,11 +95,12 @@ class DrivingEngine(Node):
 
         for instruction in final_path:
             if instruction.angle is None:
-                # TODO send angle command to car
-                pass
-            else:
-                # TODO send straight command to car
-                pass
+                instruction.angle = 0
+
+            self.send_command(
+                angle=instruction.angle,
+                arc_length=instruction.distance,
+            )
 
         goal_handle.succeed()
         result = DriveTo.Result()
@@ -85,12 +110,12 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-        self,
-        x: int,
-        y: int,
-        car_rotation: float,
-        target_station_x: float,
-        target_station_y: float,
+            self,
+            x: int,
+            y: int,
+            car_rotation: float,
+            target_station_x: float,
+            target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
