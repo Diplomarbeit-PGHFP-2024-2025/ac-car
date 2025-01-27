@@ -1,4 +1,6 @@
 import asyncio
+import math
+from typing import List
 
 import rclpy
 from rclpy.node import Node
@@ -7,6 +9,8 @@ from rclpy.action import ActionServer
 
 from custom_action_interfaces.action import DriveTo
 from custom_action_interfaces.action import DriveToStation
+from custom_action_interfaces.srv import GetPath
+from custom_action_interfaces.msg import Location
 
 from uagents import Context
 
@@ -27,20 +31,60 @@ async def introduce_agent(ctx: Context):
     rclpy.spin(minimal_publisher)
 
 
+def singleton(cls):
+    instance = {}
+
+    def get_instance(*args, **kwargs):
+        if cls not in instance:
+            instance[cls] = cls(*args, **kwargs)
+        return instance[cls]
+
+    return get_instance
+
+
+@singleton
 class MinimalPublisher(Node):
     def __init__(self, ctx: Context):
         super().__init__("minimal_publisher")
         self._action_client = ActionClient(self, DriveTo, "drive_to")
+        self._path_client = self.create_client(GetPath, "get_path")
 
         self.ctx = ctx
 
         # todo - get value from somewhere...
         self.current_location = (0, 0)
+        self.angle = math.pi
 
         self._action_server = ActionServer(
             self, DriveToStation, "drive_to_station", self.execute_drive_to
         )
         self.get_logger().info("started action server...")
+
+    async def fetch_path(
+        self,
+        car_x: int,
+        car_y: int,
+        car_rotation: float,
+        target_station_x: float,
+        target_station_y: float,
+    ) -> List[Location]:
+        get_path_req = GetPath.Request()
+
+        get_path_req.x = car_x
+        get_path_req.y = car_y
+        get_path_req.rotation = car_rotation
+        get_path_req.target_x = target_station_x
+        get_path_req.target_y = target_station_y
+
+        while not self._get_path_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("GetPath service not available, waiting again...")
+
+        print("call")
+        response = await self._get_path_client.call_async(get_path_req)
+        print(response)
+        path = response.path
+
+        return path
 
     async def execute_drive_to(self, goal_handle):
         self.get_logger().info("Executing goal...")

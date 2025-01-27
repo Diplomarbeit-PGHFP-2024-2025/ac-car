@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 from typing import Tuple, List
 from collections import defaultdict
@@ -10,12 +11,12 @@ json_key_stations_properties_map: str = "stations_properties_map"
 
 class PropertyCarData:
     def __init__(
-        self,
-        green_energy: float,
-        cost_per_kwh: float,
-        charging_wattage: float,
-        max_km: int,
-        time_frames: List[Tuple[int, int]],
+            self,
+            green_energy: float,
+            cost_per_kwh: float,
+            charging_wattage: float,
+            max_km: int,
+            time_frames: List[Tuple[int, int]],
     ):
         self.green_energy = green_energy
         self.cost_per_kwh = cost_per_kwh
@@ -38,20 +39,39 @@ def _read_stations_properties_map(ctx: Context) -> list[Tuple[str, PropertyData]
     return unserialized_properties
 
 
-def filter_stations(
-    ctx: Context, stations: list[Tuple[str, PropertyData]]
+async def filter_stations(
+        ctx: Context, stations: list[Tuple[str, PropertyData]]
 ) -> list[Tuple[str, PropertyData]]:
+    from .agent import MinimalPublisher
+
     car_properties: PropertyCarData = _read_car_properties(ctx)
 
     filtered_stations = []
 
+    minimal_publisher = MinimalPublisher(None)
+
     for station in stations:
-        if False:
-            # todo check if pathfinding distance to large
-            pass
+        path = await minimal_publisher.fetch_path(
+            minimal_publisher.current_location[0],
+            minimal_publisher.current_location[1],
+            minimal_publisher.angle,
+            station[1].geo_point[0],
+            station[1].geo_point[1],
+        )
+
+        def distance(a, b):
+            return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+        summed_distance = 0
+
+        for i, point in enumerate(path[1::]):
+            summed_distance += distance(path[i - 1], point)
+
+        if summed_distance > car_properties.max_km:
+            continue  # Car should not accept this station because it cannot reach it
 
         if (
-            car_properties.time_frames[0][0] <= station[1].open_time_frames[-1][-1]
+                car_properties.time_frames[0][0] <= station[1].open_time_frames[-1][-1]
         ) and (station[1].open_time_frames[0][0] <= car_properties.time_frames[0][-1]):
             filtered_stations.append(station)
 
@@ -59,9 +79,9 @@ def filter_stations(
 
 
 def _save_stations_properties_map(
-    ctx: Context,
-    serialized: list[Tuple[str, PropertyData]],
-    save_name: str = json_key_stations_properties_map,
+        ctx: Context,
+        serialized: list[Tuple[str, PropertyData]],
+        save_name: str = json_key_stations_properties_map,
 ):
     ctx.logger.info(
         f"[Sort Stations, serialize_and_save_stations_properties_map]: Starting serializing and saving to {save_name}"
@@ -136,11 +156,11 @@ def initialize_car_properties(ctx: Context):
 
 
 def set_car_properties(
-    ctx: Context,
-    green_energy: float,
-    cost_per_kwh: float,
-    charging_wattage: float,
-    max_km: int,
+        ctx: Context,
+        green_energy: float,
+        cost_per_kwh: float,
+        charging_wattage: float,
+        max_km: int,
 ):
     ctx.storage.set("green_energy_weight", green_energy)
     ctx.storage.set("cost_per_kwh_weight", cost_per_kwh)
@@ -148,8 +168,8 @@ def set_car_properties(
     ctx.storage.set("filter_max_km", max_km)
 
 
-def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
-    stations_properties = filter_stations(ctx, _read_stations_properties_map(ctx))
+async def sort_stations(ctx: Context) -> (str, PropertyData, Tuple[int, int]):
+    stations_properties = await filter_stations(ctx, _read_stations_properties_map(ctx))
 
     # test stuff
     open_timeframes = [

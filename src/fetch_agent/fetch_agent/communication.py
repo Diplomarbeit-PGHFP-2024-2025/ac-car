@@ -50,7 +50,7 @@ async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
 
     await _wait_for_stations(ctx)
 
-    optimal_station: (str, PropertyData, Tuple[int, int]) = sort_stations(ctx)
+    optimal_station: (str, PropertyData, Tuple[int, int]) = await sort_stations(ctx)
     optimal_station_future.set_result(optimal_station)
 
 
