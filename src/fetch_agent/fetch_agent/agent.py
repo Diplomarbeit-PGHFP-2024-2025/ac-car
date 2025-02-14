@@ -11,6 +11,7 @@ from custom_action_interfaces.action import DriveTo
 from custom_action_interfaces.action import DriveToStation
 from custom_action_interfaces.srv import GetPath
 from custom_action_interfaces.msg import Location
+from rclpy.executors import MultiThreadedExecutor
 
 from uagents import Context
 
@@ -24,11 +25,8 @@ async def introduce_agent(ctx: Context):
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     initialize_car_properties(ctx)
 
-    rclpy.init()
-
-    minimal_publisher = MinimalPublisher(ctx)
-
-    rclpy.spin(minimal_publisher)
+    minimal_publisher = MinimalPublisher(None)
+    minimal_publisher.ctx = ctx
 
 
 def singleton(cls):
@@ -44,7 +42,7 @@ def singleton(cls):
 
 @singleton
 class MinimalPublisher(Node):
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx):
         super().__init__("minimal_publisher")
         self._action_client = ActionClient(self, DriveTo, "drive_to")
         self._path_client = self.create_client(GetPath, "get_path")
@@ -61,12 +59,12 @@ class MinimalPublisher(Node):
         self.get_logger().info("started action server...")
 
     async def fetch_path(
-        self,
-        car_x: int,
-        car_y: int,
-        car_rotation: float,
-        target_station_x: float,
-        target_station_y: float,
+            self,
+            car_x: int,
+            car_y: int,
+            car_rotation: float,
+            target_station_x: float,
+            target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
@@ -153,7 +151,35 @@ class MinimalPublisher(Node):
 
 
 def main():
-    agent.run()
+    rclpy.init()
+
+    minimal_publisher = MinimalPublisher(None)
+
+    # Explicitly set the asyncio event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # ✅ Use a proper ROS 2 executor
+    executor = MultiThreadedExecutor()
+    executor.add_node(minimal_publisher)
+
+    # Run ROS 2 and Fetch.ai together in async
+    loop.create_task(node_executor(executor))
+    loop.create_task(agent.run())
+
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rclpy.shutdown()
+
+
+async def node_executor(executor):
+    while rclpy.ok():
+        executor.spin_once(timeout_sec=0.1)
+        print("spin?")
+        await asyncio.sleep(0.1)  # Prevent blocking the loop
 
 
 if __name__ == "__main__":

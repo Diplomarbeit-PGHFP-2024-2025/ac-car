@@ -41,6 +41,7 @@ async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse)
 
 
 async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
+    print("response")
     ctx.logger.info(f"stations: {msg}")
     initialize_stations_properties_map(ctx)
 
@@ -70,15 +71,19 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
 
 
 async def fetch_stations(
-    ctx: Context, car_geo_point: tuple[float, float]
+        ctx: Context, car_geo_point: tuple[float, float]
 ) -> (str, PropertyData, Tuple[int, int]):
     global optimal_station_future
     optimal_station_future = asyncio.Future()
+
+    print("send")
 
     await ctx.send(
         acs_id,
         StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=5.0),
     )
+
+    print("waiting")
 
     return await optimal_station_future
 

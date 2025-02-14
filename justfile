@@ -11,8 +11,8 @@ init:
     echo "source ./install/local_setup.bash" >> ~/.bashrc
 
 install:
-    python3 -m pip install uagents==0.17.1
-    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@038a64cb06671faa5eb0593d035eb94fa249396a
+    python3 -m pip install uagents==0.19.0
+    python3 -m pip install git+https://github.com/Diplomarbeit-PGHFP-2024-2025/aca-protocols.git@ea16602378e2d002b756fee205e67632857f18aa
     python3 -m pip install ruff
     python3 -m pip install python-dotenv
 
