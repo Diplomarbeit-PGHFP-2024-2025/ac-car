@@ -1,4 +1,5 @@
-int32 target_station
+float32 target_station_x
+float32 target_station_y
 ---
 int32 status_code
 ---
