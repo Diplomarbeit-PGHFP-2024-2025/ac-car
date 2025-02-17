@@ -19,14 +19,26 @@ from .sort_stations import initialize_car_properties, set_car_properties
 from .fetchAgent import agent
 from .communication import fetch_stations, register_at_station
 
+minimal_publisher = None
+
 
 @agent.on_event("startup")
 async def introduce_agent(ctx: Context):
+    global minimal_publisher
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     initialize_car_properties(ctx)
 
-    minimal_publisher = MinimalPublisher(None)
-    minimal_publisher.ctx = ctx
+    rclpy.init()
+
+    minimal_publisher = MinimalPublisher(ctx)
+
+
+@agent.on_interval(period=2.0)  # Runs every 2 seconds
+async def say_hello(ctx: Context):
+    global minimal_publisher
+
+    if rclpy.ok():
+        rclpy.spin_once(minimal_publisher, timeout_sec=1.0)  # Process ROS2 messages once
 
 
 def singleton(cls):
@@ -151,35 +163,7 @@ class MinimalPublisher(Node):
 
 
 def main():
-    rclpy.init()
-
-    minimal_publisher = MinimalPublisher(None)
-
-    # Explicitly set the asyncio event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    # ✅ Use a proper ROS 2 executor
-    executor = MultiThreadedExecutor()
-    executor.add_node(minimal_publisher)
-
-    # Run ROS 2 and Fetch.ai together in async
-    loop.create_task(node_executor(executor))
-    loop.create_task(agent.run())
-
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        rclpy.shutdown()
-
-
-async def node_executor(executor):
-    while rclpy.ok():
-        executor.spin_once(timeout_sec=0.1)
-        print("spin?")
-        await asyncio.sleep(0.1)  # Prevent blocking the loop
+    agent.run()
 
 
 if __name__ == "__main__":
