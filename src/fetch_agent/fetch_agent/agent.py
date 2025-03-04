@@ -62,7 +62,7 @@ class MinimalPublisher(Node):
         self.ctx = ctx
 
         # todo - get value from somewhere...
-        self.current_location = (0, 0)
+        self.current_location = (10, 0)
         self.angle = math.pi
 
         self._action_server = ActionServer(
@@ -86,11 +86,11 @@ class MinimalPublisher(Node):
         get_path_req.target_x = target_station_x
         get_path_req.target_y = target_station_y
 
-        while not self._get_path_client.wait_for_service(timeout_sec=1.0):
+        while not self._path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
 
         print("call")
-        response = await self._get_path_client.call_async(get_path_req)
+        response = await self._path_client.call_async(get_path_req)
         print(response)
         path = response.path
 
@@ -110,11 +110,20 @@ class MinimalPublisher(Node):
         )
 
         station_id, station_property, time_frame = await fetch_stations(
-            self.ctx, self.current_location
+            self.ctx, self.current_location, 1000
         )
 
-        if not station_id == "NO STATION":
-            await register_at_station(self.ctx, station_id, time_frame)
+        print(station_property)
+
+        if station_id == "NO STATION":
+            print("NO STATION!")
+            goal_handle.succeed()
+
+            result = DriveToStation.Result()
+            result.status = "failed"
+            return result
+
+        await register_at_station(self.ctx, station_id, time_frame)
 
         self.drove_to_station_future = asyncio.Future()
         self.drive_to_station(

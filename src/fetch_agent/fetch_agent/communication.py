@@ -37,10 +37,8 @@ optimal_station_future = asyncio.Future()
 
 @agent.on_message(StationQueryResponse)
 async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse):
-    asyncio.ensure_future(on_station_query_response(ctx, msg))
+    global optimal_station_future
 
-
-async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
     print("response")
     ctx.logger.info(f"stations: {msg}")
     initialize_stations_properties_map(ctx)
@@ -49,10 +47,9 @@ async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
         ctx.logger.info(f"Requesting Properties of station: {station}")
         await ctx.send(station, PropertyQueryRequest())
 
-    await _wait_for_stations(ctx)
+    print("start awaiting")
 
-    optimal_station: (str, PropertyData, Tuple[int, int]) = await sort_stations(ctx)
-    optimal_station_future.set_result(optimal_station)
+    asyncio.create_task(_wait_for_stations(ctx))
 
 
 async def _wait_for_stations(ctx):
@@ -61,6 +58,12 @@ async def _wait_for_stations(ctx):
     ctx.logger.info(f"Waiting for responses from stations for: {waiting_time} seconds")
     await asyncio.sleep(waiting_time)
     ctx.storage.set("finished_waiting", True)
+
+    print("done awaiting")
+
+    optimal_station: (str, PropertyData, Tuple[int, int]) = await sort_stations(ctx)
+    print("optimal station", optimal_station)
+    optimal_station_future.set_result(optimal_station)
 
 
 @agent.on_message(PropertyQueryResponse)
@@ -71,7 +74,7 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
 
 
 async def fetch_stations(
-        ctx: Context, car_geo_point: tuple[float, float]
+        ctx: Context, car_geo_point: tuple[float, float], search_radius: float
 ) -> (str, PropertyData, Tuple[int, int]):
     global optimal_station_future
     optimal_station_future = asyncio.Future()
@@ -80,10 +83,10 @@ async def fetch_stations(
 
     await ctx.send(
         acs_id,
-        StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=5.0),
+        StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=search_radius),
     )
 
-    print("waiting")
+    print("waiting", optimal_station_future)
 
     return await optimal_station_future
 
