@@ -23,7 +23,7 @@ class DrivingEngine(Node):
         )
 
     def send_command(
-        self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
+            self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
     ):
         msg = MotionControl.Request()
         msg.id = cmd_id
@@ -64,14 +64,18 @@ class DrivingEngine(Node):
             target_station_y,
         )
 
+        path = [[p[0], p[1]] for p in (point.point for point in path)]
+
+        print(path)
+
         last_point = current_position
         updated_path = []
         for point in path[1::]:
             updated_path.append(
-                (last_point, (point[0] - last_point[0], point[1] - last_point[1]))
+                [last_point, [point[0] - last_point[0], point[1] - last_point[1]]]
             )
             last_point = point
-        updated_path.append((last_point, updated_path[-1][1]))
+        updated_path.append([last_point, updated_path[-1][1]])
 
         current_direction = (math.cos(current_angle), math.sin(current_angle))
         updated_path[0][1] = current_direction
@@ -110,12 +114,12 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-        self,
-        x: int,
-        y: int,
-        car_rotation: float,
-        target_station_x: float,
-        target_station_y: float,
+            self,
+            x: int,
+            y: int,
+            car_rotation: float,
+            target_station_x: float,
+            target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
@@ -130,7 +134,7 @@ class DrivingEngine(Node):
 
         print("call")
         response = await self._get_path_client.call_async(get_path_req)
-        print(response)
+        print("repsonse: ", response)
         path = response.path
 
         return path

@@ -34,7 +34,6 @@ async def say_hello(ctx: Context):
 
     # check if ctx.storage.get("finished_waiting") is true so we don't spin ros while we are fetching stations via fetchAI since this causes problems with optimal_station_future
     if rclpy.ok() and ctx.storage.get("finished_waiting"):
-        print("ros spin")
         rclpy.spin_once(minimal_publisher, timeout_sec=1.0)  # Process ROS2 messages once
 
 
