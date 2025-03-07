@@ -11,7 +11,6 @@ from custom_action_interfaces.action import DriveTo
 from custom_action_interfaces.action import DriveToStation
 from custom_action_interfaces.srv import GetPath
 from custom_action_interfaces.msg import Location
-from rclpy.executors import MultiThreadedExecutor
 
 from uagents import Context
 
@@ -34,7 +33,9 @@ async def say_hello(ctx: Context):
 
     # check if ctx.storage.get("finished_waiting") is true so we don't spin ros while we are fetching stations via fetchAI since this causes problems with optimal_station_future
     if rclpy.ok() and ctx.storage.get("finished_waiting"):
-        rclpy.spin_once(minimal_publisher, timeout_sec=1.0)  # Process ROS2 messages once
+        rclpy.spin_once(
+            minimal_publisher, timeout_sec=1.0
+        )  # Process ROS2 messages once
 
 
 def singleton(cls):
@@ -67,12 +68,12 @@ class MinimalPublisher(Node):
         self.get_logger().info("started action server...")
 
     async def fetch_path(
-            self,
-            car_x: int,
-            car_y: int,
-            car_rotation: float,
-            target_station_x: float,
-            target_station_y: float,
+        self,
+        car_x: int,
+        car_y: int,
+        car_rotation: float,
+        target_station_x: float,
+        target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 

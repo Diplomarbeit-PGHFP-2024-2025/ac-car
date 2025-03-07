@@ -74,7 +74,7 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
 
 
 async def fetch_stations(
-        ctx: Context, car_geo_point: tuple[float, float], search_radius: float
+    ctx: Context, car_geo_point: tuple[float, float], search_radius: float
 ) -> (str, PropertyData, Tuple[int, int]):
     global optimal_station_future
     optimal_station_future = asyncio.Future()
@@ -83,7 +83,9 @@ async def fetch_stations(
 
     await ctx.send(
         acs_id,
-        StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=search_radius),
+        StationQueryRequest(
+            lat=car_geo_point[0], long=car_geo_point[1], radius=search_radius
+        ),
     )
 
     print("waiting", optimal_station_future)
