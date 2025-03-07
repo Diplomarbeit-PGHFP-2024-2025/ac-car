@@ -19,25 +19,22 @@ from .sort_stations import initialize_car_properties, set_car_properties
 from .fetchAgent import agent
 from .communication import fetch_stations, register_at_station
 
-minimal_publisher = None
-
 
 @agent.on_event("startup")
 async def introduce_agent(ctx: Context):
-    global minimal_publisher
     ctx.logger.info(f"Agent: {agent.name} ({agent.address})")
     initialize_car_properties(ctx)
 
     rclpy.init()
 
-    minimal_publisher = MinimalPublisher(ctx)
-
 
 @agent.on_interval(period=2.0)  # Runs every 2 seconds
 async def say_hello(ctx: Context):
-    global minimal_publisher
+    minimal_publisher = MinimalPublisher(ctx)
 
-    if rclpy.ok():
+    # check if ctx.storage.get("finished_waiting") is true so we don't spin ros while we are fetching stations via fetchAI since this causes problems with optimal_station_future
+    if rclpy.ok() and ctx.storage.get("finished_waiting"):
+        print("ros spin")
         rclpy.spin_once(minimal_publisher, timeout_sec=1.0)  # Process ROS2 messages once
 
 
