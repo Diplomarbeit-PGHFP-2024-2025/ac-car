@@ -126,6 +126,7 @@ class MinimalPublisher(Node):
             station_property.geo_point[0], station_property.geo_point[1]
         )
 
+        # todo - crash because of... i dont know why :(
         drove_to_result = await self.drove_to_station_future
         self.get_logger().info(f"drove_to_result: {drove_to_result}")
 
