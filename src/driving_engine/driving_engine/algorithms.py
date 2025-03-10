@@ -4,7 +4,6 @@ import math
 def drive_to(
     current_position, current_direction, next_position, next_direction, driving_radius
 ):
-    print(current_position, current_direction, next_position, next_direction)
     current_normal = (current_direction[1], -current_direction[0])
     next_normal = (next_direction[1], -next_direction[0])
 

@@ -66,8 +66,6 @@ class DrivingEngine(Node):
 
         path = [[p[0], p[1]] for p in (point.point for point in path)]
 
-        print(path)
-
         last_point = current_position
         updated_path = []
         for point in path[1::]:
@@ -132,9 +130,9 @@ class DrivingEngine(Node):
         while not self._get_path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
 
-        print("call")
+        print("fetch path call:", get_path_req)
         response = await self._get_path_client.call_async(get_path_req)
-        print("repsonse: ", response)
+        print("fetch path response: ", response)
         path = response.path
 
         return path
