@@ -23,7 +23,7 @@ class DrivingEngine(Node):
         )
 
     def send_command(
-            self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
+        self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
     ):
         msg = MotionControl.Request()
         msg.id = cmd_id
@@ -121,12 +121,12 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-            self,
-            x: float,
-            y: float,
-            car_rotation: float,
-            target_station_x: float,
-            target_station_y: float,
+        self,
+        x: float,
+        y: float,
+        car_rotation: float,
+        target_station_x: float,
+        target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 

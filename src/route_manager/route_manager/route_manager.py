@@ -59,8 +59,12 @@ class PathActionServer(Node):
         path_points = []
         for path_point in path:
             path_points.append(
-                Location(point=[path_point.position.x * ac_map_data.cell_size,
-                                path_point.position.y * ac_map_data.cell_size])
+                Location(
+                    point=[
+                        path_point.position.x * ac_map_data.cell_size,
+                        path_point.position.y * ac_map_data.cell_size,
+                    ]
+                )
             )
 
         response.path = path_points
