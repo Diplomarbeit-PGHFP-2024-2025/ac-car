@@ -15,8 +15,8 @@ class PathActionServer(Node):
         self.srv = self.create_service(GetPath, "get_path", self.get_path)
 
     def get_path(self, request, response):
-        x = request.x
-        y = request.y
+        x = int(round(request.x))
+        y = int(round(request.y))
         target_station_x = request.target_x
         target_station_y = request.target_y
         car_rotation = request.rotation

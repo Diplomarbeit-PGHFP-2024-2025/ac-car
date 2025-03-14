@@ -68,20 +68,20 @@ class MinimalPublisher(Node):
         self.get_logger().info("started action server...")
 
     async def fetch_path(
-        self,
-        car_x: int,
-        car_y: int,
-        car_rotation: float,
-        target_station_x: float,
-        target_station_y: float,
+            self,
+            car_x: float,
+            car_y: float,
+            car_rotation: float,
+            target_station_x: float,
+            target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
-        get_path_req.x = car_x
-        get_path_req.y = car_y
-        get_path_req.rotation = car_rotation
-        get_path_req.target_x = target_station_x
-        get_path_req.target_y = target_station_y
+        get_path_req.x = float(car_x)
+        get_path_req.y = float(car_y)
+        get_path_req.rotation = float(car_rotation)
+        get_path_req.target_x = float(target_station_x)
+        get_path_req.target_y = float(target_station_y)
 
         while not self._path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
@@ -124,7 +124,8 @@ class MinimalPublisher(Node):
 
         self.drove_to_station_future = asyncio.Future()
         self.drive_to_station(
-            station_property.geo_point[0], station_property.geo_point[1]
+            station_property.geo_point[0], station_property.geo_point[1], self.current_location[0],
+            self.current_location[1], self.angle
         )
 
         # todo - crash because of... i dont know why :(
@@ -139,11 +140,17 @@ class MinimalPublisher(Node):
         result.status = "done"
         return result
 
-    def drive_to_station(self, target_station_x: float, target_station_y: float):
+    def drive_to_station(self, target_station_x: float, target_station_y: float, car_x: float, car_y: float,
+                         car_angle: float):
         goal_msg = DriveTo.Goal()
 
-        goal_msg.target_station_x = target_station_x
-        goal_msg.target_station_y = target_station_y
+        goal_msg.target_station_x = float(target_station_x)
+        goal_msg.target_station_y = float(target_station_y)
+        goal_msg.car_x = float(car_x)
+        goal_msg.car_y = float(car_y)
+        goal_msg.car_angle = float(car_angle)
+
+        print(goal_msg)
 
         self._action_client.wait_for_server()
 

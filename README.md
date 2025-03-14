@@ -13,7 +13,7 @@ just build
 ### FetchAgent
 
 The FetchAgent is the core of the project manage the communication to the station via fetchAI and calling the
-drive_engine and route_manager
+DriveEngine and RouteManager
 
 ```bash
 just agent run
@@ -21,7 +21,7 @@ just agent run
 
 ### DriveEngine
 
-The DriveEngine is the module that cals MotionControl(Bosch Drive Api) based on the path
+The DriveEngine is the module that cals MotionControl(Bosch Drive Api) based on the path it gets from the RouteManger.
 
 ```bash
 just drive run
@@ -53,4 +53,4 @@ ros2 pkg create --build-type ament_python --license Apache-2.0 [module-name]
 todo:
 
 * fix route manager crashing when no path was found
-* make drive_engine get path from fetch_agent
+* make car angle and location be set via env

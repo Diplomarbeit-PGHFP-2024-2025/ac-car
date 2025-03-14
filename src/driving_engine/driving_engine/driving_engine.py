@@ -23,7 +23,7 @@ class DrivingEngine(Node):
         )
 
     def send_command(
-        self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
+            self, override=True, angle=0.0, arc_length=0.0, velocity=0.8, cmd_id=0
     ):
         msg = MotionControl.Request()
         msg.id = cmd_id
@@ -49,12 +49,12 @@ class DrivingEngine(Node):
         self.get_logger().info("got drive request")
 
         # TODO should represent real car data
-        current_position = (15, 15)
-        current_angle = math.pi
         driving_radius = 6
 
         target_station_x = goal_handle.request.target_station_x
         target_station_y = goal_handle.request.target_station_y
+        current_position = (goal_handle.request.car_x, goal_handle.request.car_y)
+        current_angle = goal_handle.request.car_angle
 
         path = await self.fetch_path(
             current_position[0],
@@ -112,20 +112,20 @@ class DrivingEngine(Node):
         return result
 
     async def fetch_path(
-        self,
-        x: int,
-        y: int,
-        car_rotation: float,
-        target_station_x: float,
-        target_station_y: float,
+            self,
+            x: float,
+            y: float,
+            car_rotation: float,
+            target_station_x: float,
+            target_station_y: float,
     ) -> List[Location]:
         get_path_req = GetPath.Request()
 
-        get_path_req.x = x
-        get_path_req.y = y
-        get_path_req.rotation = car_rotation
-        get_path_req.target_x = target_station_x
-        get_path_req.target_y = target_station_y
+        get_path_req.x = float(x)
+        get_path_req.y = float(y)
+        get_path_req.rotation = float(car_rotation)
+        get_path_req.target_x = float(target_station_x)
+        get_path_req.target_y = float(target_station_y)
 
         while not self._get_path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
