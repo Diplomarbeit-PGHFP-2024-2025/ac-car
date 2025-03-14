@@ -42,7 +42,7 @@ class PathActionServer(Node):
 
         path = ac_map.get_path(
             (round(math.cos(car_rotation)), round(math.sin(car_rotation))),
-            Point(x, y),
+            Point(x // ac_map_data.cell_size, y // ac_map_data.cell_size),
             station_index,
         )
 
@@ -53,10 +53,14 @@ class PathActionServer(Node):
             print(ac_map)
             print("no path found...")
 
+            response.path = []
+            return response
+
         path_points = []
         for path_point in path:
             path_points.append(
-                Location(point=[path_point.position.x, path_point.position.y])
+                Location(point=[path_point.position.x * ac_map_data.cell_size,
+                                path_point.position.y * ac_map_data.cell_size])
             )
 
         response.path = path_points

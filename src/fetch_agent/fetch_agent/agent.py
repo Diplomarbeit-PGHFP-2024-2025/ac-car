@@ -1,8 +1,10 @@
 import asyncio
 import math
+import os
 from typing import List
 
 import rclpy
+from dotenv import load_dotenv
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.action import ActionServer
@@ -17,6 +19,8 @@ from uagents import Context
 from .sort_stations import initialize_car_properties, set_car_properties
 from .fetchAgent import agent
 from .communication import fetch_stations, register_at_station
+
+load_dotenv()
 
 
 @agent.on_event("startup")
@@ -59,8 +63,11 @@ class MinimalPublisher(Node):
         self.ctx = ctx
 
         # todo - get value from somewhere...
-        self.current_location = (10, 0)
-        self.angle = math.pi
+        self.current_location = (float(os.getenv("CAR_X")), float(os.getenv("CAR_Y")))
+        self.angle = float(os.getenv("CAR_ANGLE"))
+
+        print(self.current_location)
+        print(self.angle)
 
         self._action_server = ActionServer(
             self, DriveToStation, "drive_to_station", self.execute_drive_to

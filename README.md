@@ -49,8 +49,3 @@ just send_drive_to
 ### creating a new ros2 module
 
 ros2 pkg create --build-type ament_python --license Apache-2.0 [module-name]
-
-todo:
-
-* fix route manager crashing when no path was found
-* make car angle and location be set via env

@@ -64,6 +64,15 @@ class DrivingEngine(Node):
             target_station_y,
         )
 
+        if len(path) <= 1:
+            self.get_logger().info("No drivable path found")
+
+            goal_handle.succeed()
+            result = DriveTo.Result()
+
+            result.status_code = 404
+            return result
+
         path = [[p[0], p[1]] for p in (point.point for point in path)]
 
         last_point = current_position
@@ -107,7 +116,7 @@ class DrivingEngine(Node):
         goal_handle.succeed()
         result = DriveTo.Result()
 
-        result.status_code = 404
+        result.status_code = 1
 
         return result
 
