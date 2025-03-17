@@ -1,4 +1,3 @@
-import asyncio
 import os
 from typing import List
 
@@ -31,7 +30,7 @@ async def introduce_agent(ctx: Context):
 
 
 @agent.on_interval(period=2.0)  # Runs every 2 seconds
-async def say_hello(ctx: Context):
+async def spin_ros(ctx: Context):
     minimal_publisher = MinimalPublisher(ctx)
 
     # check if ctx.storage.get("finished_waiting") is true so we don't spin ros while we are fetching stations via fetchAI since this causes problems with optimal_station_future
@@ -61,12 +60,8 @@ class MinimalPublisher(Node):
 
         self.ctx = ctx
 
-        # todo - get value from somewhere...
         self.current_location = (float(os.getenv("CAR_X")), float(os.getenv("CAR_Y")))
         self.angle = float(os.getenv("CAR_ANGLE"))
-
-        print(self.current_location)
-        print(self.angle)
 
         self._action_server = ActionServer(
             self, DriveToStation, "drive_to_station", self.execute_drive_to
@@ -92,9 +87,10 @@ class MinimalPublisher(Node):
         while not self._path_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("GetPath service not available, waiting again...")
 
-        print("call")
+        self.get_logger().info("send GetPath")
         response = await self._path_client.call_async(get_path_req)
-        print(response)
+        self.get_logger().info("GetPath: {}".format(response))
+
         path = response.path
 
         return path
@@ -128,7 +124,6 @@ class MinimalPublisher(Node):
 
         await register_at_station(self.ctx, station_id, time_frame)
 
-        self.drove_to_station_future = asyncio.Future()
         self.drive_to_station(
             station_property.geo_point[0],
             station_property.geo_point[1],
@@ -137,16 +132,10 @@ class MinimalPublisher(Node):
             self.angle,
         )
 
-        # todo - crash because of... i dont know why :(
-        drove_to_result = await self.drove_to_station_future
-        self.get_logger().info(f"drove_to_result: {drove_to_result}")
-
-        # todo - call start charging
-
         goal_handle.succeed()
 
         result = DriveToStation.Result()
-        result.status = "done"
+        result.status = "started driving to station"
         return result
 
     def drive_to_station(
@@ -176,22 +165,31 @@ class MinimalPublisher(Node):
     def drive_to_station_goal_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().info("Goal rejected :(")
+            self.get_logger().info("DriveToStation rejected")
             return
 
-        self.get_logger().info("Goal accepted :)")
+        self.get_logger().info("DriveToStation accepted")
 
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.drive_to_station_result_callback)
 
     def drive_to_station_result_callback(self, future):
         result = future.result().result
-        self.get_logger().info("Result: {}".format(result.status_code))
+        self.get_logger().info("drove_to_result: {}".format(result))
 
-        self.drove_to_station_future.set_result(result)
+        # todo - call start charging
 
 
 def main():
+    if not os.getenv("WAITING_TIME"):
+        raise Exception("WAITING_TIME environment variable not set")
+    if not os.getenv("CAR_X"):
+        raise Exception("CAR_X environment variable not set")
+    if not os.getenv("CAR_Y"):
+        raise Exception("CAR_Y environment variable not set")
+    if not os.getenv("CAR_ANGLE"):
+        raise Exception("CAR_ANGLE environment variable not set")
+
     agent.run()
 
 

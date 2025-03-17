@@ -53,4 +53,3 @@ ros2 pkg create --build-type ament_python --license Apache-2.0 [module-name]
 ### Todo
 
 * drive_engine crashing "only length-1 arrays can be converted to Python scalars"
-* fetch_agent crashing while waiting for "drive_to_station" cause fetchAI takes over running python - "await wasn't used with future"
