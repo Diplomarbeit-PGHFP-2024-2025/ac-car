@@ -96,7 +96,7 @@ class MinimalPublisher(Node):
         return path
 
     async def execute_drive_to(self, goal_handle):
-        self.get_logger().info("Executing goal...")
+        self.get_logger().info("Executing execute drive to goal")
         _target_soc = goal_handle.request.target_soc
 
         green_energy = goal_handle.request.green_energy
@@ -112,7 +112,7 @@ class MinimalPublisher(Node):
             self.ctx, self.current_location, 1000
         )
 
-        print(station_property)
+        self.get_logger().info("station property: {}".format(station_property))
 
         if station_id == "NO STATION":
             print("NO STATION!")
@@ -154,10 +154,9 @@ class MinimalPublisher(Node):
         goal_msg.car_y = float(car_y)
         goal_msg.car_angle = float(car_angle)
 
-        print(goal_msg)
-
         self._action_client.wait_for_server()
 
+        self.get_logger().info("send drive to goal: {}".format(goal_msg))
         self._send_goal_future = self._action_client.send_goal_async(goal_msg)
 
         self._send_goal_future.add_done_callback(self.drive_to_station_goal_callback)
