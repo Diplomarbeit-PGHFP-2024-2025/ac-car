@@ -124,6 +124,15 @@ class Map:
             for point in get_straight_line(center, opening):
                 self._cells[point.x][point.y] = CellState.EMPTY
 
+    def get_station_id_from_cord(self, station_x: float, station_y: float) -> int:
+        for i, station in enumerate(self._stations):
+            if station.obstacle.center.x == round(
+                station_x
+            ) and station.obstacle.center.y == round(station_y):
+                return i
+
+        return -1
+
     def get_path(
         self, direction: Tuple[int, int], start: Point, goal_station: int
     ) -> List[PathNode] | None:

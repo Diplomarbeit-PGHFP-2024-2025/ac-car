@@ -32,13 +32,13 @@ from aca_protocols.ac_charging_protocol import CarFinishedChargingInfo
 
 load_dotenv()
 
+optimal_station_future = asyncio.Future()
+
 
 @agent.on_message(StationQueryResponse)
 async def on_is_registered(ctx: Context, sender: str, msg: StationQueryResponse):
-    asyncio.ensure_future(on_station_query_response(ctx, msg))
+    global optimal_station_future
 
-
-async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
     ctx.logger.info(f"stations: {msg}")
     initialize_stations_properties_map(ctx)
 
@@ -46,11 +46,9 @@ async def on_station_query_response(ctx: Context, msg: StationQueryResponse):
         ctx.logger.info(f"Requesting Properties of station: {station}")
         await ctx.send(station, PropertyQueryRequest())
 
-    await _wait_for_stations(ctx)
+    ctx.logger.info("start awaiting for stations responses")
 
-    optimal_station: (str, PropertyData, Tuple[int, int]) = sort_stations(ctx)
-    if not optimal_station[0] == "NO STATION":
-        await register_at_station(ctx, optimal_station[0])
+    asyncio.create_task(_wait_for_stations(ctx))
 
 
 async def _wait_for_stations(ctx):
@@ -60,6 +58,13 @@ async def _wait_for_stations(ctx):
     await asyncio.sleep(waiting_time)
     ctx.storage.set("finished_waiting", True)
 
+    ctx.logger.info("finished awaiting for stations responses")
+
+    optimal_station: (str, PropertyData, Tuple[int, int]) = await sort_stations(ctx)
+    ctx.logger.info(f"optimal station: {optimal_station}")
+
+    optimal_station_future.set_result(optimal_station)
+
 
 @agent.on_message(PropertyQueryResponse)
 async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
@@ -68,13 +73,22 @@ async def on_properties(ctx: Context, sender: str, msg: PropertyQueryResponse):
     set_PropertyData_of_sender(ctx, sender, msg.properties)
 
 
-async def fetch_stations(ctx: Context):
-    car_geo_point = ctx.storage.get("car_geo_point")
+async def fetch_stations(
+    ctx: Context, car_geo_point: tuple[float, float], search_radius: float
+) -> (str, PropertyData, Tuple[int, int]):
+    global optimal_station_future
+    optimal_station_future = asyncio.Future()
+
+    print("send fetch stations")
 
     await ctx.send(
         acs_id,
-        StationQueryRequest(lat=car_geo_point[0], long=car_geo_point[1], radius=5.0),
+        StationQueryRequest(
+            lat=car_geo_point[0], long=car_geo_point[1], radius=search_radius
+        ),
     )
+
+    return await optimal_station_future
 
 
 @agent.on_message(CarRegisterResponse)
@@ -84,10 +98,12 @@ async def on_registered_at_station(ctx: Context, sender: str, msg: CarRegisterRe
     await ctx.send(sender, CarFinishedChargingInfo(kwh_charged=12))
 
 
-async def register_at_station(ctx: Context, station: str):
+async def register_at_station(ctx: Context, station: str, time_frame: Tuple[int, int]):
     await ctx.send(
         station,
-        CarRegisterRequest(start_time=0, duration=10),
+        CarRegisterRequest(
+            start_time=time_frame[0], duration=time_frame[1] - time_frame[0]
+        ),
     )
 
 

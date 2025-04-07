@@ -29,8 +29,8 @@ def drive_to(
     determinant = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
 
     if determinant == 0:
-        print("Cannot compute")
-        return None
+        print("Cannot compute -> is straight")
+        return current_position, next_position, 0
 
     det_t = vector_difference[0] * matrix[1][1] - vector_difference[1] * matrix[0][1]
     t = det_t / determinant

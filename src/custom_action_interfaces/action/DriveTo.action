@@ -1,4 +1,8 @@
-int32 target_station
+float32 target_station_x
+float32 target_station_y
+float32 car_x
+float32 car_y
+float32 car_angle
 ---
 int32 status_code
 ---
